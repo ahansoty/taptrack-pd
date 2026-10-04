@@ -63,11 +63,11 @@ def sapi_wav(text: str, path: Path, rate: int):
 
 
 def generate(rate: int) -> list[Path]:
-    audio.OUT_DIR.mkdir(parents=True, exist_ok=True)
+    audio.SRC_DIR.mkdir(parents=True, exist_ok=True)
     engine = "elevenlabs" if config.ELEVENLABS_API_KEY else "windows-sapi"
     out = []
     for name, text in audio.PROMPTS.items():
-        path = audio.OUT_DIR / name
+        path = audio.SRC_DIR / name
         used = engine
         try:
             (elevenlabs_wav if engine == "elevenlabs" else sapi_wav)(text, path, rate)
@@ -84,6 +84,8 @@ def generate(rate: int) -> list[Path]:
         print(f"  {name:<12} {secs:4.1f} s  {path.stat().st_size // 1024} KB  ({used}, {rate} Hz)")
         out.append(path)
     audio.ensure_beeps()
+    audio.apply_volume()
+    print(f"scaled to volume {config.VOLUME:.2f} -> {audio.OUT_DIR}")
     return out
 
 
@@ -109,8 +111,13 @@ if __name__ == "__main__":
     ap.add_argument("--rate", type=int, default=config.FW_WAV_RATE)
     ap.add_argument("--upload", action="store_true")
     ap.add_argument("--play")
+    ap.add_argument("--volume-only", action="store_true", help="re-scale existing recordings, no new TTS")
     a = ap.parse_args()
-    print("generating:")
-    generate(a.rate)
+    if a.volume_only:
+        audio.ensure_beeps()
+        print("scaled:", [p.name for p in audio.apply_volume()], f"at {config.VOLUME:.2f}")
+    else:
+        print("generating:")
+        generate(a.rate)
     if a.upload:
         upload(a.play)

@@ -90,6 +90,16 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="TapTrack PD", lifespan=lifespan)
 
 
+@app.middleware("http")
+async def no_stale_assets(request: Request, call_next):
+    """Pages and their scripts change together; never let a browser mix an old script with a new page."""
+    resp = await call_next(request)
+    path = request.url.path
+    if path.startswith("/static") or path in ("/", "/caregiver", "/login"):
+        resp.headers["Cache-Control"] = "no-cache, must-revalidate"
+    return resp
+
+
 def store():
     return state["store"]
 

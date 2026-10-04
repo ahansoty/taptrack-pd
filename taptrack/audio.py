@@ -27,7 +27,8 @@ PROMPTS = {
 }
 BEEPS = {"beep.wav": (880, 0.15), "go.wav": (1320, 0.25), "end.wav": (660, 0.35)}
 
-OUT_DIR = config.AUDIO_DIR / "out"
+OUT_DIR = config.AUDIO_DIR / "out"     # files uploaded to the device (scaled to VOLUME)
+SRC_DIR = config.AUDIO_DIR / "src"     # full-level originals (ElevenLabs / SAPI / generated beeps)
 
 
 def make_beep(path: Path, freq: int, seconds: float, rate: int | None = None):
@@ -45,14 +46,43 @@ def make_beep(path: Path, freq: int, seconds: float, rate: int | None = None):
         w.writeframes(b"".join(frames))
 
 
+def scale_wav(src: Path, dst: Path, volume: float):
+    """Copy a 16-bit mono wav at a lower level (the device has no volume control)."""
+    import array
+
+    with wave.open(str(src)) as r:
+        params, frames = r.getparams(), r.readframes(r.getnframes())
+    a = array.array("h", frames)
+    for i, v in enumerate(a):
+        a[i] = int(v * volume)
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    with wave.open(str(dst), "wb") as w:
+        w.setparams(params)
+        w.writeframes(a.tobytes())
+
+
+def apply_volume(volume: float | None = None) -> list[Path]:
+    """Write every source wav into OUT_DIR at the configured volume."""
+    volume = config.VOLUME if volume is None else volume
+    out = []
+    for src in sorted(SRC_DIR.glob("*.wav")):
+        dst = OUT_DIR / src.name
+        scale_wav(src, dst, volume)
+        out.append(dst)
+    return out
+
+
 def ensure_beeps() -> dict[str, Path]:
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    SRC_DIR.mkdir(parents=True, exist_ok=True)
     out = {}
     for name, (f, s) in BEEPS.items():
-        p = OUT_DIR / name
-        if not p.exists():
-            make_beep(p, f, s)
-        out[name] = p
+        src = SRC_DIR / name
+        if not src.exists():
+            make_beep(src, f, s)
+        dst = OUT_DIR / name
+        if not dst.exists():
+            scale_wav(src, dst, config.VOLUME)
+        out[name] = dst
     return out
 
 

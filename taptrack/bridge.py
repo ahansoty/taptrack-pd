@@ -164,7 +164,7 @@ class Bridge(threading.Thread):
             if p:
                 files[name] = p
         for name, path in files.items():
-            stamp = f"{name}:{path.stat().st_size}"
+            stamp = f"{name}:{hashlib.sha1(path.read_bytes()).hexdigest()[:12]}"
             if stamp in known:
                 dev.sounds.add(name)
                 continue

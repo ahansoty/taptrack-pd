@@ -46,10 +46,11 @@
     nav a.signin { background: var(--accent); color: #fff; margin-left: 6px; }
 
     h1, h2, h3 { color: var(--ink); line-height: 1.1; }
-    h1 { font-size: clamp(2.2rem, 5.6vw, 3.7rem); margin: 0 0 18px; font-weight: 600; letter-spacing: -.03em; }
+    h1 { font-size: clamp(2rem, 4vw, 3rem); margin: 0 0 14px; font-weight: 600; letter-spacing: -.03em; line-height: 1.08; }
+    .tagline { font-size: clamp(1.1rem, 1.8vw, 1.3rem); color: var(--ink); font-weight: 500; margin: 0 0 14px; max-width: 30em; line-height: 1.4; }
     h2 { font-size: clamp(1.6rem, 3.6vw, 2.3rem); margin: 0 0 12px; font-weight: 600; letter-spacing: -.025em; }
     h3 { font-size: 1.1rem; margin: 0 0 6px; font-weight: 600; letter-spacing: -.01em; }
-    .lede { font-size: 1.12rem; max-width: 36em; }
+    .lede { font-size: 1rem; max-width: 34em; color: var(--muted); margin: 0; }
 
     .btn { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: .92rem; padding: 12px 20px; border-radius: 8px; text-decoration: none; border: 1px solid var(--rule); color: var(--ink); background: var(--surface); }
     .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
@@ -67,7 +68,7 @@
     .legend span { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: .66rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); }
     .legend i { width: 12px; height: 12px; display: block; }
 
-    .hero { padding: 64px 16px 36px; display: grid; grid-template-columns: 1.05fr .95fr; gap: 48px; align-items: center; }
+    .hero { padding: 72px 16px 44px; display: grid; grid-template-columns: 1.15fr .85fr; gap: 56px; align-items: center; }
     .device { background: var(--surface); border-radius: 18px; padding: 14px; border: 1px solid var(--rule); }
     .screens { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .screens img { width: 100%; height: auto; display: block; border-radius: 6px; border: 1px solid var(--rule); }
@@ -117,8 +118,9 @@
   <div class="wrap hero">
     <div>
       <p class="kicker caps">MHacks 2026 · Parkinson's disease</p>
-      <h1>Parkinson's changes hour by hour. Neurologists see it a few times a year.</h1>
-      <p class="lede">TapTrack PD is a one-minute motor check on the wrist, done several times a day and tagged with the time since the last levodopa dose. It shows the neurologist the hours they're missing: when each dose kicks in and when it wears off.</p>
+      <h1>Parkinson's changes hour&nbsp;by&nbsp;hour.</h1>
+      <p class="tagline">Neurologists see it a few times a year. TapTrack PD shows them the hours they're missing.</p>
+      <p class="lede">A one-minute check on the wrist, several times a day, tagged with the time since the last levodopa dose.</p>
       <div class="actions">
         <a class="btn primary" href="http://127.0.0.1:8000/login">Sign in to the app</a>
         <a class="btn" href="#clinic">See the dashboard</a>
