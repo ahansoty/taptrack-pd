@@ -1,0 +1,3 @@
+uagents==0.25.5
+httpx
+python-dotenv

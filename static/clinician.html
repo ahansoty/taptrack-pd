@@ -112,8 +112,15 @@
     </section>
 
     <section class="card span-12" aria-labelledby="h-agent">
-      <h2 id="h-agent">Care-team agent (Fetch.ai)</h2>
-      <p class="sub">Actions the TapTrack agent on Agentverse took from this data.</p>
+      <div class="row"><h2 id="h-agent">Care-team agent (Fetch.ai) and messages (Photon iMessage)</h2><span class="spacer"></span>
+        <span id="agent-pill" class="pill"><span class="dot" aria-hidden="true"></span>Agent</span>
+        <span id="photon-pill" class="pill"><span class="dot" aria-hidden="true"></span>iMessage</span></div>
+      <p class="sub">The agent watches this data and decides when to text the caregiver or patient, send the report, and request a follow-up.</p>
+      <div class="row" style="margin-bottom:12px">
+        <button id="btn-test-msg">Send test message</button>
+        <button id="btn-sim-low">Simulate wearing-off check</button>
+        <span class="muted" id="msg-status" role="status" aria-live="polite"></span>
+      </div>
       <ul class="feed" id="agent-feed"><li class="muted">No agent actions yet.</li></ul>
     </section>
   </div>

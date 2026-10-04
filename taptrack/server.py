@@ -15,7 +15,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from . import analysis, config, report, synth
+from . import analysis, config, notify, report, synth
 from .bridge import Bridge
 from .storage import get_store
 
@@ -72,6 +72,7 @@ async def lifespan(app: FastAPI):
         bridge = Bridge(store, hub.publish)
         from . import integrations
         integrations.register(bridge, store, hub.publish)
+        bridge.listeners.append(_fallback_alert)
         bridge.start()
     state["bridge"] = bridge
     yield
@@ -102,10 +103,29 @@ app.mount("/static", StaticFiles(directory=STATIC), name="static")
 
 
 # ------------------------------------------------------------------ data
+AGENT_STALE_S = 30
+
+
+def agent_alive() -> bool:
+    return time.time() - state.get("agent_seen", 0) < AGENT_STALE_S
+
+
+def _fallback_alert(row):
+    """The Fetch.ai agent decides notifications. If it isn't running, the server still sends the red-score
+    alert (and in DEMO_MODE an update after every live check, so a phone buzzes during the pitch)."""
+    if agent_alive() or row.get("score") is None or row.get("source") == "synthetic":
+        return
+    demo_all = config.DEMO_MODE and config.env("DEMO_ALERT_ALL_CHECKS", "true").lower() != "false"
+    if row.get("level") == "low" or demo_all:
+        r = notify.send("caregiver", notify.red_alert(row), store(), kind="caregiver_alert", source="server (agent offline)")
+        hub.publish({"type": "notification", "kind": "caregiver_alert", "sent": r.get("ok"), "error": r.get("error")})
+
+
 @app.get("/api/status")
 def status():
     b = state.get("bridge")
-    return {"features": config.features(), "storage": store().kind,
+    return {"features": {**config.features(), "agent": agent_alive(), "photon": notify.photon_health().get("ok", False)},
+            "storage": store().kind,
             "device": b.status() if b else {"state": "off"},
             "patient": {"id": config.PATIENT_ID, "name": config.PATIENT_NAME, "dose_times": config.DOSE_TIMES,
                         "record": store().get_setting("patient")},
@@ -194,6 +214,7 @@ def dose(body: DoseIn | None = None):
 
 class CheckIn(BaseModel):
     simulate: bool = False
+    state: float | None = None  # simulated motor state 0..1 (e.g. 0.1 = wearing off) for demos
 
 
 @app.post("/api/check/start")
@@ -201,8 +222,9 @@ def start_check(body: CheckIn | None = None):
     b = state.get("bridge")
     if not b:
         raise HTTPException(503, "bridge disabled")
-    simulate = bool(body and body.simulate) or not (b.device and b.device.connected)
-    b.request_check(simulate=simulate)
+    forced = body.state if body else None
+    simulate = bool(body and body.simulate) or forced is not None or not (b.device and b.device.connected)
+    b.request_check(simulate=simulate, state=forced)
     return {"queued": True, "simulate": simulate}
 
 
@@ -239,6 +261,72 @@ def latest_report():
 @app.get("/api/patient")
 def patient():
     return store().get_setting("patient") or {}
+
+
+class NotifyIn(BaseModel):
+    kind: str                      # caregiver_alert | missed_reminder | report_sent | custom
+    to: str = "caregiver"
+    text: str | None = None
+    check: dict | None = None
+    slot: dict | None = None
+    doctor: str | None = None
+    appointment: str | None = None
+    onset_minutes: float | None = None
+    source: str = "fetch.ai agent"
+
+
+@app.post("/api/notify")
+def send_notification(n: NotifyIn):
+    """Called by the Fetch.ai agent when it decides to notify; formats and sends via Photon iMessage."""
+    if n.text:
+        text = n.text
+    elif n.kind == "caregiver_alert" and n.check:
+        text = notify.red_alert(n.check)
+    elif n.kind == "missed_reminder" and n.slot:
+        text = notify.missed_reminder(n.slot)
+    elif n.kind == "report_sent":
+        text = notify.report_sent(n.doctor or "the neurologist", n.appointment, n.onset_minutes)
+    else:
+        raise HTTPException(400, "need text or kind-specific fields")
+    text, _ = report.guard(text)
+    r = notify.send(n.to, text, store(), kind=n.kind, source=n.source)
+    hub.publish({"type": "notification", "kind": n.kind, "to": n.to, "text": text, "sent": r.get("ok"), "error": r.get("error")})
+    return {**r, "text": text}
+
+
+@app.post("/api/notify/test")
+def test_notification():
+    text = f"TapTrack test message: notifications for {notify.first_name()} are working."
+    r = notify.send("caregiver", text, store(), kind="test_message", source="dashboard")
+    hub.publish({"type": "notification", "kind": "test_message", "sent": r.get("ok"), "error": r.get("error")})
+    return {**r, "text": text}
+
+
+@app.post("/api/chat")
+def chat(body: dict):
+    """Inbound iMessage (via the Photon sidecar) or ASI:One question -> short answer from our data."""
+    sender = body.get("from") or body.get("sender") or "unknown"
+    reply = notify.chat_reply(store(), sender, body.get("text", ""), body.get("role", "caregiver"))
+    store().add_action("chat_reply", {"to": sender[-4:] if sender else "?", "q": body.get("text", "")[:120], "text": reply})
+    hub.publish({"type": "agent_action", "kind": "chat_reply", "detail": {"text": reply}})
+    return {"reply": reply}
+
+
+class Heartbeat(BaseModel):
+    address: str | None = None
+    name: str | None = None
+
+
+@app.post("/api/agent/heartbeat")
+def agent_heartbeat(h: Heartbeat):
+    state["agent_seen"] = time.time()
+    state["agent"] = h.model_dump()
+    return {"ok": True}
+
+
+@app.get("/api/agent")
+def agent_status():
+    return {"alive": agent_alive(), "last_seen": state.get("agent_seen"), **(state.get("agent") or {})}
 
 
 @app.get("/api/events")

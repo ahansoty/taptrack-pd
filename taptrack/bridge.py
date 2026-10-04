@@ -73,8 +73,8 @@ class Bridge(threading.Thread):
         self._last_home = 0.0
 
     # ------------------------------------------------------------ public API (any thread)
-    def request_check(self, simulate: bool = False):
-        self.commands.put(("check", simulate))
+    def request_check(self, simulate: bool = False, state: float | None = None):
+        self.commands.put(("check", (simulate, state)))
 
     def request_dose(self, source="dashboard"):
         self.commands.put(("dose", source))
@@ -258,7 +258,8 @@ class Bridge(threading.Thread):
             if cmd == "dose":
                 self._log_dose(arg)
             elif cmd == "check":
-                self.run_check(simulate=arg)
+                sim, forced = arg if isinstance(arg, tuple) else (arg, None)
+                self.run_check(simulate=sim, state=forced)
 
     # ------------------------------------------------------------ actions
     def _log_dose(self, source):
@@ -375,7 +376,7 @@ class Bridge(threading.Thread):
             dev.mode = "rest"
         return result
 
-    def run_check(self, simulate: bool = False):
+    def run_check(self, simulate: bool = False, state: float | None = None):
         if self.state == "check":
             return None
         prev_state, prev_dev = self.state, self.device
@@ -387,7 +388,7 @@ class Bridge(threading.Thread):
             self.device = sim
         dev = self.device
         if isinstance(dev, SimDevice):
-            dev.state = self._synthetic_state_now()
+            dev.state = self._synthetic_state_now() if state is None else state
         self.state = "check"
         results, started = {}, time.time()
         source = "demo" if isinstance(dev, SimDevice) else "device"

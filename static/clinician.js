@@ -125,7 +125,8 @@ let activePhase = "", stepsDone = {};
 
 function agentFeed(actions) {
   if (!actions.length) return;
-  $("agent-feed").innerHTML = actions.map((a) => `<li><time>${TT.fmtTime(a.ts)}</time><span><strong>${TT.esc(a.kind.replace(/_/g, " "))}</strong> · ${TT.esc(a.detail.text || a.detail.summary || JSON.stringify(a.detail))}</span></li>`).join("");
+  const sent = (d) => (d.sent === true ? " · iMessage sent" : d.sent === false ? ` · not sent: ${d.error || "?"}` : "");
+  $("agent-feed").innerHTML = actions.map((a) => `<li><time>${TT.fmtTime(a.ts)}</time><span><strong>${TT.esc(a.kind.replace(/_/g, " "))}</strong> · ${TT.esc((a.detail.text || a.detail.summary || JSON.stringify(a.detail)) + sent(a.detail))}</span></li>`).join("");
 }
 
 function renderRecord(rec, outbox) {
@@ -142,6 +143,12 @@ function renderRecord(rec, outbox) {
   $("record").innerHTML = tiles.map((t) => `<div class="tile"><div class="label">${t.label}</div><div class="value">${t.value}</div><div class="note">${TT.esc(t.note)}</div></div>`).join("");
 }
 
+function pill(id, ok, onText, offText) {
+  const el = $(id);
+  el.className = `pill ${ok ? "ok" : "warn"}`;
+  el.innerHTML = `<span class="dot" aria-hidden="true"></span>${ok ? onText : offText}`;
+}
+
 async function loadAll() {
   const [status, summary, t, hm, latest, actions] = await Promise.all([
     TT.api("/api/status"), TT.api("/api/summary"), TT.api("/api/today"), TT.api("/api/heatmap"),
@@ -152,6 +159,8 @@ async function loadAll() {
   $("sched").textContent = `levodopa ${status.patient.dose_times.join(", ")}`;
   TT.deviceBadge($("device"), status.device);
   const f = status.features;
+  pill("agent-pill", f.agent, "Agent online", "Agent offline");
+  pill("photon-pill", f.photon, "iMessage connected", "iMessage not configured");
   $("foot-meta").textContent = `Storage: ${status.storage === "timescale" ? "TimescaleDB (Tiger Data)" : "local SQLite"} · Records: ${f.finchnode ? "FinchNode " + f.finchnode_mode : "local"} · Reports: ${f.gemini ? "Gemini" : "template"}${f.quiet ? " · audio muted" : ""}`;
   today = t;
   renderLatest(latest);
@@ -201,6 +210,10 @@ function onEvent(e) {
     case "agent_action": TT.api("/api/actions").then(agentFeed); feed(`Agent: ${e.kind.replace(/_/g, " ")}`); break;
     case "report": showReport(e.report); break;
     case "patient": refreshSoon(); break;
+    case "notification":
+      feed(`iMessage ${e.kind.replace(/_/g, " ")}: ${e.sent ? "sent" : "not sent (" + (e.error || "unknown") + ")"}`);
+      TT.api("/api/actions").then(agentFeed);
+      break;
   }
 }
 let refreshTimer;
@@ -220,6 +233,18 @@ $("btn-check").onclick = async (ev) => {
     TT.toast(r.simulate ? "No wrist device: running a simulated check" : "Check started: follow the wrist");
   } catch (e) { TT.toast("Could not start a check"); }
   setTimeout(() => (ev.target.disabled = false), 3000);
+};
+$("btn-test-msg").onclick = async (ev) => {
+  ev.target.disabled = true;
+  try { const r = await TT.post("/api/notify/test", {}); $("msg-status").textContent = r.ok ? "Test iMessage sent." : (r.error || "Not sent."); }
+  catch (e) { $("msg-status").textContent = "Messaging unavailable."; }
+  ev.target.disabled = false;
+};
+$("btn-sim-low").onclick = async (ev) => {
+  ev.target.disabled = true;
+  await TT.post("/api/check/start", { simulate: true, state: 0.05 });
+  TT.toast("Simulated wearing-off check started (about 1 minute)");
+  setTimeout(() => (ev.target.disabled = false), 5000);
 };
 $("btn-dose").onclick = async () => { await TT.post("/api/dose", { source: "dashboard" }); TT.toast("Dose logged"); };
 $("btn-report").onclick = async (ev) => {

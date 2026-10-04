@@ -9,3 +9,6 @@ audio/out/
 agent/*_data.json
 data/shots/
 data/*.log
+agent/.seed
+agent/.venv/
+photon/node_modules/

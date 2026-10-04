@@ -42,11 +42,22 @@
   patient summary: Gemini when GEMINI_API_KEY is set, deterministic template otherwise; a guard strips any
   sentence that reads as medication advice (tested).
 
+- Phase 7: Fetch.ai + Photon. `agent/taptrack_agent.py` runs a Bureau of two uAgents: `taptrack-care`
+  (mailbox, Agentverse, AgentChatProtocol 0.3.0 for ASI:One) and `taptrack-clinic` (scheduling desk).
+  The care agent decides: red check -> caregiver iMessage; recent missed check -> patient reminder;
+  wearing-off pattern -> report + FollowUpRequest to the clinic agent -> offer -> caregiver iMessage.
+  Verified locally: Almanac registration OK, wearing-off -> report -> clinic offer -> notify, simulated red
+  check -> agent alert within seconds. Photon sidecar `photon/sidecar.mjs` (spectrum-ts 12.10.1, cloud
+  iMessage, no Mac) sends and answers caregiver replies through `/api/chat` with per-sender context.
+  Server sends the red alert itself if the agent is offline. Dashboard: agent/iMessage status, "Send test
+  message", "Simulate wearing-off check". SUBMISSION.md has the ASI:One steps.
+
 ## Disabled (missing keys)
 - Tiger Data (DATABASE_URL) -> SQLite fallback
 - Gemini (GEMINI_API_KEY) -> template report (same facts, same no-dose-advice guard)
 - ElevenLabs (ELEVENLABS_API_KEY) -> on-device number speech + laptop TTS fallback
-- Agentverse (AGENTVERSE_API_KEY) -> mailbox registration via Inspector link
+- Agentverse: mailbox needs a one-time Inspector click (no API key needed)
+- Photon iMessage (PHOTON_PROJECT_ID/SECRET, CAREGIVER_PHONE, PATIENT_PHONE) -> messages logged as not sent
 
 ## You need to do
 - Tell me which of the t8k/t16k/t22k test tones you heard (sets FW_WAV_RATE).
