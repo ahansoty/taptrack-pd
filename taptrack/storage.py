@@ -37,6 +37,10 @@ class Storage:
 
             self.pg = True
             self.conn = psycopg.connect(self.url, autocommit=True)
+            # own schema: never collide with other apps' tables in a shared database
+            self.schema = config.env("DB_SCHEMA", "taptrack")
+            self.conn.execute(f'CREATE SCHEMA IF NOT EXISTS "{self.schema}"')
+            self.conn.execute(f'SET search_path TO "{self.schema}", public')
             self.kind = "timescale"
         else:
             self.pg = False

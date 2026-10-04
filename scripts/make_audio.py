@@ -68,16 +68,20 @@ def generate(rate: int) -> list[Path]:
     out = []
     for name, text in audio.PROMPTS.items():
         path = audio.OUT_DIR / name
+        used = engine
         try:
             (elevenlabs_wav if engine == "elevenlabs" else sapi_wav)(text, path, rate)
         except Exception as ex:
-            print(f"  {name}: {engine} failed ({ex})" + ("; trying windows-sapi" if engine == "elevenlabs" else ""))
-            if engine == "elevenlabs":
-                sapi_wav(text, path, rate)
+            msg = str(getattr(ex, "body", "") or ex)[:160]
+            print(f"  {name}: {engine} failed ({msg})" + ("; using windows-sapi" if engine == "elevenlabs" else ""))
+            if engine != "elevenlabs":
+                raise
+            sapi_wav(text, path, rate)
+            used = "windows-sapi"
         with wave.open(str(path)) as w:
             secs = w.getnframes() / w.getframerate()
             assert w.getnchannels() == 1 and w.getsampwidth() == 2, "must be mono 16-bit"
-        print(f"  {name:<12} {secs:4.1f} s  {path.stat().st_size // 1024} KB  ({engine}, {rate} Hz)")
+        print(f"  {name:<12} {secs:4.1f} s  {path.stat().st_size // 1024} KB  ({used}, {rate} Hz)")
         out.append(path)
     audio.ensure_beeps()
     return out

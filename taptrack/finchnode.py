@@ -34,12 +34,35 @@ def _headers():
     return {"Authorization": f"Bearer {config.FINCHNODE_API_KEY}"} if config.FINCHNODE_API_KEY else {}
 
 
-def fetch_record(subject: str | None = None, timeout: float = 10.0) -> dict:
-    subject = subject or config.FINCHNODE_PATIENT_ID
-    url = f"{config.FINCHNODE_BASE_URL.rstrip('/')}/users/{subject}/records"
-    r = httpx.get(url, params={"categories": CATEGORIES}, headers=_headers(), timeout=timeout)
+PUBLIC_DEMO = "https://api.finchnode.com/demo/v1"
+DEMO_SUBJECT = "patient-demo-polypharmacy"
+
+
+def resolve_subject(timeout: float = 10.0) -> tuple[str, str, str]:
+    """(base_url, subject, mode). With a sandbox key and no FINCHNODE_PATIENT_ID, use the first consented
+    sandbox user; if there is none yet, fall back to the public demo record and say so."""
+    base = config.FINCHNODE_BASE_URL.rstrip("/")
+    explicit = config.env("FINCHNODE_PATIENT_ID")
+    if not config.FINCHNODE_API_KEY:
+        return PUBLIC_DEMO, explicit or DEMO_SUBJECT, "public demo"
+    if explicit:
+        return base, explicit, "sandbox"
+    r = httpx.get(f"{base}/users", headers=_headers(), timeout=timeout)
     r.raise_for_status()
-    return r.json()
+    users = r.json().get("data", [])
+    if users:
+        u = users[0]
+        return base, u.get("subject") or u.get("id"), "sandbox"
+    log.warning("FinchNode sandbox has no consented users yet; using the public demo record")
+    return PUBLIC_DEMO, DEMO_SUBJECT, "public demo (sandbox has no consented user yet)"
+
+
+def fetch_record(timeout: float = 10.0) -> tuple[dict, str, str]:
+    base, subject, mode = resolve_subject(timeout)
+    headers = _headers() if base != PUBLIC_DEMO else {}
+    r = httpx.get(f"{base}/users/{subject}/records", params={"categories": CATEGORIES}, headers=headers, timeout=timeout)
+    r.raise_for_status()
+    return r.json(), subject, mode
 
 
 def doses_per_day(text: str) -> int | None:
@@ -78,8 +101,7 @@ def summarize(record: dict) -> dict:
         if n in FREQ_TIMES:
             schedule, schedule_source = FREQ_TIMES[n], f"FinchNode order: {levo.get('name')}"
     return {
-        "source": "finchnode", "mode": "sandbox" if config.FINCHNODE_API_KEY else "public demo",
-        "subject": config.FINCHNODE_PATIENT_ID, "record_id": record.get("id"),
+        "source": "finchnode", "mode": "public demo", "subject": None, "record_id": record.get("id"),
         "synthetic": record.get("synthetic", True),
         "name": (demo.get("name") or "").replace(" (synthetic)", ""), "age": age, "gender": demo.get("gender"),
         "conditions": [c.get("name") for c in data.get("conditions", []) if c.get("name")],
@@ -96,7 +118,9 @@ def load_patient(store) -> dict | None:
     if not config.FINCHNODE_ENABLED:
         return None
     try:
-        p = summarize(fetch_record())
+        record, subject, mode = fetch_record()
+        p = summarize(record)
+        p.update(subject=subject, mode=mode)
         store.set_setting("patient", p)
         log.info("FinchNode record loaded: %s, %s meds, schedule from %s", p["name"], len(p["medications"]), p["schedule_source"])
         return p
@@ -117,7 +141,7 @@ def observation(check: dict) -> dict:
         "resourceType": "Observation", "status": "final" if check.get("complete", True) else "preliminary",
         "category": [{"coding": [{"system": "http://terminology.hl7.org/CodeSystem/observation-category", "code": "exam"}]}],
         "code": {"text": "TapTrack PD composite motor score (wrist check)"},
-        "subject": {"reference": f"Patient/{config.FINCHNODE_PATIENT_ID}"},
+        "subject": {"reference": f"Patient/{(config.env('FINCHNODE_PATIENT_ID') or 'taptrack-patient')}"},
         "effectiveDateTime": ts,
         "valueQuantity": {"value": check.get("score"), "unit": "score (0-100, 85 = personal baseline)"},
         "component": comps,
@@ -127,6 +151,6 @@ def observation(check: dict) -> dict:
 
 def queue_writeback(store, check: dict):
     store.add_outbox("fhir_observation", {
-        "target": f"FinchNode {config.FINCHNODE_PATIENT_ID}",
+        "target": f"FinchNode {(store.get_setting('patient') or {}).get('subject', '')}",
         "reason": "FinchNode API is read-only; queued for an EHR that accepts writes",
         "resource": observation(check)}, status="queued")

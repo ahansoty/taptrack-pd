@@ -59,7 +59,7 @@ GEMINI_API_KEY = env("GEMINI_API_KEY")
 GEMINI_MODEL = env("GEMINI_MODEL", "gemini-2.5-flash")
 
 ELEVENLABS_API_KEY = env("ELEVENLABS_API_KEY")
-ELEVENLABS_VOICE_ID = env("ELEVENLABS_VOICE_ID", "21m00Tcm4TlvDq8ikWAM")
+ELEVENLABS_VOICE_ID = env("ELEVENLABS_VOICE_ID", "EXAVITQu4vr4xnSDxMaL")  # "Sarah": premade, usable on free API plans
 
 HOST = env("HOST", "127.0.0.1")
 PORT = int(env("PORT", "8000"))
@@ -69,7 +69,7 @@ def features() -> dict:
     return {
         "timescale": bool(DATABASE_URL),
         "finchnode": FINCHNODE_ENABLED and bool(FINCHNODE_BASE_URL),
-        "finchnode_mode": "sandbox" if FINCHNODE_API_KEY else "public demo",
+        "finchnode_mode": "sandbox key" if FINCHNODE_API_KEY else "public demo",
         "gemini": bool(GEMINI_API_KEY),
         "elevenlabs": bool(ELEVENLABS_API_KEY),
         "demo_mode": DEMO_MODE,

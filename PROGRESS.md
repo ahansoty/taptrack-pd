@@ -57,17 +57,22 @@
   check arriving in the browser over the websocket (58 s, all four tests measured) with the real FREE-WILi
   attached. README has setup + the 3-minute demo script.
 
-## Disabled (missing keys)
-- Tiger Data (DATABASE_URL) -> SQLite fallback
-- Gemini (GEMINI_API_KEY) -> template report (same facts, same no-dose-advice guard)
-- ElevenLabs (ELEVENLABS_API_KEY) -> on-device number speech + laptop TTS fallback
-- Agentverse: mailbox needs a one-time Inspector click (no API key needed)
-- Photon iMessage (PHOTON_PROJECT_ID/SECRET, CAREGIVER_PHONE, PATIENT_PHONE) -> messages logged as not sent
+## Live integrations (keys added 2026-10-04)
+- Tiger Data path: Neon Postgres 18 + TimescaleDB 2.24, hypertables checks/doses/passive in schema `taptrack`
+  (that database already had another app's tables in `public`, e.g. checks/doses/outbox; we never touch them).
+- Gemini `gemini-3.5-flash-lite` writes the visit report (~9 s); the guard removed 1 advice-like sentence on the first run.
+- ElevenLabs: voice "Sarah" (premade; free plans can't use library voices via API), prompts uploaded to the wrist.
+- Photon: Spectrum connects (project "rehab"); needs CAREGIVER_PHONE / PATIENT_PHONE to send.
+- FinchNode sandbox key works; sandbox has no consented user yet, so the public demo record is used and labeled.
+
+## Disabled / pending
+- iMessage sends: no phone numbers in .env yet.
+- FinchNode sandbox patient: consent pending at the hosted Connect link.
+- Agentverse mailbox: one-time Inspector click.
 
 ## You need to do
-1. Keys in `.env` (all optional): PHOTON_PROJECT_ID/SECRET + CAREGIVER_PHONE/PATIENT_PHONE (register both numbers
-   under Users in the Photon dashboard), GEMINI_API_KEY, ELEVENLABS_API_KEY (then `python scripts/make_audio.py --upload`),
-   DATABASE_URL (Tiger Data). Restart `./start.sh --demo` after editing.
+1. Add CAREGIVER_PHONE and PATIENT_PHONE (E.164) to .env and register both under Users in the Photon dashboard;
+   restart `./start.sh --demo`. Rotate the keys pasted in chat after the hackathon.
 2. Agentverse: open the "Agent inspector" link printed in data/agent.log -> Connect -> Mailbox; fill the Agent Profile.
 3. Push a public GitHub repo, record the 3-5 min video, register with the MHacks ASI:One Submission Agent (SUBMISSION.md).
 4. Before the demo: set QUIET=false, and confirm you can hear the wrist prompts (t8k/t16k/t22k all played; audibility unchecked).

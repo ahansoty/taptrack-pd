@@ -14,3 +14,4 @@ agent/.venv/
 photon/node_modules/
 *_data.json
 data/start.log
+data/.env*
