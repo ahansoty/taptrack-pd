@@ -142,3 +142,16 @@ def test_dashboard_simulated_check_on_real_device_measures_all_tests(store):
     assert set(row["tests"]) == {"flip", "tremor", "taps", "voice"}, row["results"]
     assert b.device is dev
     assert events[-1]["type"] == "device" and events[-1]["state"] != "check"
+
+
+def test_home_screen_ignores_simulated_and_synthetic_checks(store):
+    import time as _t
+    b = Bridge(store, lambda e: None)
+    b.device = SimDevice()
+    now = _t.time()
+    store.add_check(now - 600, 20, "low", {}, {}, {}, source="synthetic")
+    store.add_check(now - 300, 30, "low", {}, {}, {}, source="demo")  # dashboard-simulated
+    b.demo = False
+    assert b._desired_home() in ("home_n", "home_due")
+    store.add_check(now - 60, 90, "good", {}, {}, {}, source="device")
+    assert b._desired_home() in ("home_g", "home_due")

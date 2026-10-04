@@ -131,9 +131,11 @@ class Bridge(threading.Thread):
             slot = day0 + h * 3600 + m * 60
             if slot <= now <= slot + 45 * 60 and not any(c["ts"] >= slot - 45 * 60 for c in recent):
                 return "home_due"
-        real = [c for c in recent if c["source"] != "synthetic" and c.get("level") in HOME_BY_LEVEL]
-        last = real[-1] if real else (recent[-1] if recent else None)
-        return HOME_BY_LEVEL.get(last["level"], "home_n") if last else "home_n"
+        # only checks done on this wrist count (not synthetic history, not dashboard-simulated checks);
+        # in demo replay the simulated wrist is the wrist
+        mine = "demo" if self.demo else "device"
+        own = [c for c in recent if c["source"] == mine and c.get("level") in HOME_BY_LEVEL]
+        return HOME_BY_LEVEL[own[-1]["level"]] if own else "home_n"
 
     def _home(self, force=False):
         dev = self.device
