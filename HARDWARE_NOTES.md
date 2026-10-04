@@ -25,7 +25,13 @@ Requested interval vs real rate (device flat, 3 s windows):
 | 10 | ~40 Hz |
 | 5 | **~79 Hz** |
 
-- Real rate is ~35-40% of the nominal rate. **We use interval 5 ms (~79 Hz)** for all accel tests, so tremor
+- **The accel stream is motion-gated** (re-measured with `scripts/hw_motionprobe.py`): lying still on a
+  table the device sends only ~1 event/s at any interval; held in the hand it sends ~84/s, waving ~117/s.
+  The 79 Hz above was measured while it was being handled. Worn on a wrist it streams continuously.
+  Consequences: (1) we treat a stream < 20 Hz during a test as "not worn" and flag it; (2) passive tremor
+  is only sampled when the stream is >= 20 Hz and the wrist is still; (3) linear resampling across gaps
+  is correct because a gap means "value unchanged".
+- Real rate (when handled) is ~35-40% of the nominal rate. **We use interval 5 ms (~79 Hz)** for all accel tests, so tremor
   dominant frequency (3-12 Hz FFT) is enabled (rate >= 40 Hz). If a session measures < 40 Hz, the code
   automatically falls back to strength only.
 - Delivery over USB is bursty (0 to ~100 events in 1.5 s windows), so we timestamp samples with the
@@ -36,7 +42,9 @@ Requested interval vs real rate (device flat, 3 s windows):
 ## Gotchas found by reading the library source
 - `send_file(path, "test.wav")` uploads to the **root**, not `/sounds`. Use `"/sounds/test.wav"` (or `None` to auto-map).
 - Every call returns a `result.Result`; Err messages from firmware can be empty strings.
-- Set screen text **before** enabling button events. Pulling the USB raises `SerialException` from the reader
+- Set screen text **before** enabling button events (the bridge re-enables buttons after every screen update).
+- `set_system_sounds(False)` works (returns the menu prompt `Enter Letter:` as Ok). There is no volume API;
+  `QUIET=true` mutes all wrist + laptop audio. Pulling the USB raises `SerialException` from the reader
   thread; the bridge catches this and switches to DEMO_MODE replay.
 
 ## Design decisions based on this
