@@ -63,7 +63,7 @@ def test_simulated_check_end_to_end(store, state, lo, hi):
     assert set(row["tests"]) == {"flip", "tremor", "taps", "voice"}, row["results"]
     assert lo <= row["score"] <= hi, (row["score"], row["metrics"])
     types = [e["type"] for e in events]
-    assert types[0] == "check_started" and types[-1] == "check_result"
+    assert types[0] == "check_started" and types[-2:] == ["check_result", "device"]
     assert types.count("step") == 12
     assert any("speak" in line for line in dev.log)
     assert store.latest_check()["id"] == row["id"]
@@ -78,3 +78,67 @@ def test_red_button_logs_dose(store):
     dev._press("red")
     b._tick()
     assert len(store.doses()) == 1 and events[-1]["type"] == "dose"
+
+
+def test_disconnect_switches_to_demo_replay(store, monkeypatch):
+    """A FREE-WILi that drops (unplugged during judging) -> simulated replay keeps the dashboard live."""
+    from taptrack import bridge as bridge_mod, config
+    from taptrack.device import FreeWiliDevice
+
+    class FlakyWili(FreeWiliDevice):
+        def open(self):
+            self.connected = True
+            return True
+
+        def _call(self, label, fn, *args):
+            return True
+
+        def pump(self, seconds=0.02):
+            self.connected = False  # cable pulled
+
+    monkeypatch.setattr(config, "DEMO_MODE", True)
+    monkeypatch.setattr(config, "USE_DEVICE", False)
+    events = []
+    b = bridge_mod.Bridge(store, events.append)
+    dev = FlakyWili()
+    class AnyLib:  # stands in for the freewili object; every method is a no-op
+        def __getattr__(self, name):
+            return lambda *a, **k: None
+
+    dev.dev = AnyLib()
+    dev.open()
+    b._attach(dev)
+    b._tick()   # pump -> disconnected
+    b._tick()   # detects it -> demo
+    assert b.demo and b.device.name == "simulated" and b.device.connected
+    assert any(e["type"] == "alert" and "demo replay" in e["text"] for e in events)
+    assert b.status()["state"] == "demo"
+
+
+def test_dashboard_simulated_check_on_real_device_measures_all_tests(store):
+    """Regression: a simulated check started while a real device is attached must stream sim accel."""
+    from taptrack.device import FreeWiliDevice
+
+    class IdleWili(FreeWiliDevice):
+        def _call(self, label, fn, *args):
+            return True
+
+        def pump(self, seconds=0.02):
+            import time as _t
+            _t.sleep(seconds)
+
+    events = []
+    b = Bridge(store, events.append, duration_scale=0.15, auto_advance=True)
+    dev = IdleWili()
+    dev.connected = True
+
+    class AnyLib:
+        def __getattr__(self, name):
+            return lambda *a, **k: None
+
+    dev.dev = AnyLib()
+    b._attach(dev)
+    row = b.run_check(simulate=True, state=0.9)
+    assert set(row["tests"]) == {"flip", "tremor", "taps", "voice"}, row["results"]
+    assert b.device is dev
+    assert events[-1]["type"] == "device" and events[-1]["state"] != "check"

@@ -385,6 +385,7 @@ class Bridge(threading.Thread):
             sim = SimDevice(state=self._synthetic_state_now())
             sim.open()
             sim.on_press = self.presses.put
+            sim.stream_accel(True)  # a dashboard-triggered sim check needs its own accel stream
             self.device = sim
         dev = self.device
         if isinstance(dev, SimDevice):
@@ -431,6 +432,7 @@ class Bridge(threading.Thread):
             self.device = prev_dev
         self.state = prev_state if prev_state != "check" else "idle"
         self._home(force=True)
+        self.publish({"type": "device", **self.status()})
         return row
 
     def _finish(self, results, complete, source):

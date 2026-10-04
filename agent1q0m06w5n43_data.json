@@ -1,5 +1,5 @@
 {
-    "ticks": 59,
+    "ticks": 158,
     "reminded": [],
     "followup_requested_at": 1791084205.2974794,
     "pending_request": {
@@ -7,5 +7,5 @@
         "summary": "Scores peak at 82.5 1-2.5 h after doses and fall to 35.9 at 3-4 h (-46.6 pts); decline starts ~2.5 h after a dose.",
         "onset": 150
     },
-    "last_check_id": 437
+    "last_check_id": 439
 }

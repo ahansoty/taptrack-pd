@@ -52,6 +52,11 @@
   Server sends the red alert itself if the agent is offline. Dashboard: agent/iMessage status, "Send test
   message", "Simulate wearing-off check". SUBMISSION.md has the ASI:One steps.
 
+- Phase 8: hardening. DEMO_MODE replay on disconnect (tested), `./start.sh [--demo]` starts server + bridge +
+  Photon sidecar + agents (installs on first run), 45 pytest tests pass, `scripts/e2e_live.py` verified a live
+  check arriving in the browser over the websocket (58 s, all four tests measured) with the real FREE-WILi
+  attached. README has setup + the 3-minute demo script.
+
 ## Disabled (missing keys)
 - Tiger Data (DATABASE_URL) -> SQLite fallback
 - Gemini (GEMINI_API_KEY) -> template report (same facts, same no-dose-advice guard)
@@ -60,4 +65,10 @@
 - Photon iMessage (PHOTON_PROJECT_ID/SECRET, CAREGIVER_PHONE, PATIENT_PHONE) -> messages logged as not sent
 
 ## You need to do
-- Tell me which of the t8k/t16k/t22k test tones you heard (sets FW_WAV_RATE).
+1. Keys in `.env` (all optional): PHOTON_PROJECT_ID/SECRET + CAREGIVER_PHONE/PATIENT_PHONE (register both numbers
+   under Users in the Photon dashboard), GEMINI_API_KEY, ELEVENLABS_API_KEY (then `python scripts/make_audio.py --upload`),
+   DATABASE_URL (Tiger Data). Restart `./start.sh --demo` after editing.
+2. Agentverse: open the "Agent inspector" link printed in data/agent.log -> Connect -> Mailbox; fill the Agent Profile.
+3. Push a public GitHub repo, record the 3-5 min video, register with the MHacks ASI:One Submission Agent (SUBMISSION.md).
+4. Before the demo: set QUIET=false, and confirm you can hear the wrist prompts (t8k/t16k/t22k all played; audibility unchecked).
+5. Do one real check on the wrist (physical) to calibrate the score for a healthy wearer.

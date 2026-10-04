@@ -51,6 +51,8 @@ POLL_S = float(env("AGENT_POLL_S", "3"))
 DEMO = env("DEMO_MODE", "false").lower() in ("1", "true", "yes")
 DEMO_ALERT_ALL = DEMO and env("DEMO_ALERT_ALL_CHECKS", "true").lower() != "false"
 DOCTOR = env("NEUROLOGIST_NAME", "Dr. Patel (Movement Disorders Clinic)")
+# one follow-up request per pattern per week; 30 min in DEMO_MODE so a fresh demo shows the full flow
+FOLLOWUP_COOLDOWN_S = float(env("FOLLOWUP_COOLDOWN_S", str(1800 if DEMO else 7 * 86400)))
 
 
 def seed(name: str) -> str:
@@ -141,8 +143,8 @@ async def check_wearing_off(ctx: Context, force: bool = False) -> str:
     s = await api("GET", "/api/summary")
     wo = s["wearing_off"]
     last = ctx.storage.get("followup_requested_at") or 0
-    if not force and (not wo.get("detected") or time.time() - last < 7 * 86400):
-        return "No new wearing-off pattern to act on (a follow-up was requested in the last 7 days)." if wo.get("detected") else "No wearing-off pattern detected."
+    if not force and (not wo.get("detected") or time.time() - last < FOLLOWUP_COOLDOWN_S):
+        return "Wearing-off pattern present; a follow-up was already requested recently." if wo.get("detected") else "No wearing-off pattern detected."
     rep = await api("POST", "/api/report")
     summary = (f"Scores peak at {wo.get('peak_score')} 1-2.5 h after doses and fall to {wo.get('late_score')} at 3-4 h "
                f"(-{wo.get('drop_points')} pts); decline starts ~{(wo.get('onset_minutes') or 0) / 60:.1f} h after a dose.")
@@ -244,9 +246,12 @@ async def on_ack(ctx: Context, sender: str, msg: ChatAcknowledgement):
 care.include(chat, publish_manifest=True)
 
 if __name__ == "__main__":
+    port = int(env("AGENT_PORT", "8001"))
     print(f"taptrack-care   {care.address}")
     print(f"taptrack-clinic {clinic.address}")
-    bureau = Bureau(port=int(env("AGENT_PORT", "8001")))
+    # Bureau doesn't log the inspector link; open it once, Connect -> Mailbox, to register on Agentverse
+    print(f"Agent inspector: https://agentverse.ai/inspect/?uri=http%3A//127.0.0.1%3A{port}&address={care.address}", flush=True)
+    bureau = Bureau(port=port)
     bureau.add(care)
     bureau.add(clinic)
     bureau.run()
