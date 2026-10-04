@@ -29,16 +29,30 @@ def test_send_without_sidecar_fails_gracefully(tmp_path, monkeypatch):
     monkeypatch.setenv("PHOTON_PORT", "1")  # nothing listens there
     s = make_store(tmp_path)
     r = notify.send("caregiver", "hi", s, kind="test_message")
-    assert r["ok"] is False and "sidecar" in r["error"]
+    assert r["ok"] is False and "offline" in r["error"]
     assert s.actions(1)[0]["detail"]["sent"] is False
 
 
 def test_chat_context_and_refusal(tmp_path):
     s = make_store(tmp_path)
     a1 = notify.chat_reply(s, "+1555", "how is she doing today?")
-    assert a1.startswith("Today:") and "1 checks" in a1
+    assert a1.startswith("Today:") and "1 check," in a1 and "(s)" not in a1 and " logged" in a1
     a2 = notify.chat_reply(s, "+1555", "and the afternoon?")  # follow-up keeps the day
     assert a2.startswith("Today:")
     assert "can't give medication advice" in notify.chat_reply(s, "+1555", "should she take an extra pill?")
     assert "Last dose logged" in notify.chat_reply(s, "+1555", "when was the last dose")
     assert len(s.get_setting("chat:+1555")["turns"]) == 4
+
+
+def test_good_check_never_triggers_alert(monkeypatch):
+    from taptrack import config, server
+    sent = []
+    monkeypatch.setattr(config, "DEMO_MODE", False)
+    monkeypatch.setattr(server.notify, "send", lambda *a, **k: sent.append(a) or {"ok": True})
+    monkeypatch.setattr(server, "agent_alive", lambda: False)
+    monkeypatch.setitem(server.state, "store", None)
+    for level, score in (("good", 88), ("fair", 60)):
+        server._fallback_alert({"ts": time.time(), "score": score, "level": level, "source": "device"})
+    assert sent == []
+    server._fallback_alert({"ts": time.time(), "score": 30, "level": "low", "source": "device", "minutes_since_dose": 200})
+    assert len(sent) == 1 and "much lower than usual" in sent[0][1]

@@ -23,6 +23,10 @@ def first_name() -> str:
     return (config.PATIENT_NAME or "the patient").split(" ")[0]
 
 
+def plural(n: int, word: str) -> str:
+    return f"{n} {word}" if n == 1 else f"{n} {word}s"
+
+
 def _clock(ts: float) -> str:
     return dt.datetime.fromtimestamp(ts).strftime("%I:%M %p").lstrip("0")
 
@@ -61,7 +65,8 @@ def send(to: str, text: str, store=None, kind: str = "message", source: str = "s
     try:
         r = httpx.post(url, json={"to": to, "text": text}, timeout=20).json()
     except Exception as ex:
-        r = {"ok": False, "error": f"Photon sidecar not running ({ex.__class__.__name__}); start: node photon/sidecar.mjs"}
+        r = {"ok": False, "error": "iMessage service is offline (start it with ./start.sh)"}
+        log.warning("Photon sidecar unreachable: %s", ex.__class__.__name__)
     if store is not None:
         store.add_action(kind, {"to": to, "text": text, "sent": bool(r.get("ok")), "error": r.get("error"), "source": source})
     return r
@@ -87,15 +92,15 @@ def day_summary(store, day: dt.date) -> str:
     missed = analysis.missed_checks(checks, start, end)
     label = "Today" if day == dt.date.today() else ("Yesterday" if day == dt.date.today() - dt.timedelta(days=1) else day.strftime("%A %b %d"))
     if not checks:
-        return f"{label}: no checks yet. {len(missed)} scheduled check(s) missed so far."
+        return f"{label}: no checks yet." + (f" {plural(len(missed), 'scheduled check')} missed so far." if missed else "")
     scores = [c["score"] for c in checks]
     last = checks[-1]
     low = min(checks, key=lambda c: c["score"])
     words = {"good": "good", "fair": "lower than usual", "low": "much lower than usual"}
-    return (f"{label}: {len(checks)} checks, average {round(sum(scores) / len(scores))}. Latest at {_clock(last['ts'])} was "
+    return (f"{label}: {plural(len(checks), 'check')}, average {round(sum(scores) / len(scores))}. Latest at {_clock(last['ts'])} was "
             f"{words.get(last['level'], last['level'])} ({round(last['score'])}). Lowest was {round(low['score'])} at "
-            f"{_clock(low['ts'])}, {_hm(low.get('minutes_since_dose'))}. {len(doses)} dose(s) logged, "
-            f"{len(missed)} check(s) missed.")
+            f"{_clock(low['ts'])}, {_hm(low.get('minutes_since_dose'))}. {plural(len(doses), 'dose')} logged, "
+            f"{plural(len(missed), 'check')} missed.")
 
 
 def chat_reply(store, sender: str, text: str, role: str = "caregiver") -> str:
@@ -119,7 +124,7 @@ def chat_reply(store, sender: str, text: str, role: str = "caregiver") -> str:
             d = day or today
             start = dt.datetime.combine(d, dt.time()).timestamp()
             m = analysis.missed_checks(store.checks(start, start + 86400), start, min(start + 86400, time.time()))
-            reply = (f"{len(m)} missed on {'that day' if d != today else 'today'}: " + ", ".join(_clock(x['ts']) for x in m)) if m else "No missed checks."
+            reply = (f"{plural(len(m), 'missed check')} {'that day' if d != today else 'today'}: " + ", ".join(_clock(x['ts']) for x in m)) if m else "No missed checks."
             day = d
         elif re.search(r"\b(last|latest|recent)\b.*\bcheck\b|\bcheck\b.*\b(last|latest)\b", t):
             c = store.latest_check()
