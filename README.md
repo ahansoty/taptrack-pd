@@ -106,10 +106,18 @@ If the wrist misbehaves, "Simulate wearing-off check" and the simulated 14-day h
 ## Tests
 ```bash
 .venv/Scripts/python -m pytest -q                  # 51 tests: metrics, scoring, pipeline, API, sign-in, report guard, notify, watch flow
-.venv/Scripts/python scripts/e2e_live.py --start   # browser waits for a live check over the websocket
+.venv/Scripts/python scripts/e2e_live.py --start --good   # browser waits for a live check over the websocket (no texts sent)
 .venv/Scripts/python scripts/ui_audit.py           # clicks through both dashboards, flags broken text/layout
 agent/.venv/Scripts/python agent/test_chat.py "How is she doing today?"   # chat with the agent via Agentverse
 ```
+
+## Demo video
+```bash
+.venv/Scripts/python video/build.py     # -> demo_video.mp4 (~3:20), demo_short.mp4 (60 s), video_script.md
+```
+Narration (`video/tts.py`, ElevenLabs, cached) and dashboard footage (`video/record.py`, against the running app) are
+reused. To use real wrist footage, drop `video/footage/wrist_a.mp4` (wearable scene) and/or `wrist_b.mp4` (beside the
+live dashboard) in place and re-run the build.
 
 ## Repo map
 `taptrack/` app · `static/` dashboard · `screens/` wrist screen designs (SVG for Figma, PNG, FWI) · `agent/` Fetch.ai
