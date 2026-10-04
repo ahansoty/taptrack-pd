@@ -154,8 +154,10 @@ def test_watch_flow_main_result_hold_and_dismiss(store, monkeypatch):
     dev.open()
     b._attach(dev)
     assert b._desired_home() == "home_n"
-    b.run_check()
+    row = b.run_check()
     shown = [l for l in dev.log if l.startswith("image:") or l.startswith("screen:")]
+    # the wrist's result screen matches the level the dashboard receives
+    assert b._home_override[0] == {"good": "res_g", "fair": "res_y", "low": "res_r"}[row["level"]]
     assert "calc" in " ".join(shown)
     assert b._home_override and b._home_override[0].startswith("res_")
     assert b._home_override[1] - _t.time() > 50          # held ~60 s

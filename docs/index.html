@@ -95,6 +95,13 @@
     .talk q { color: var(--ink); font-weight: 600; }
     .talk .actions { margin-top: 0; flex-wrap: nowrap; }
     @media (max-width: 760px) { .talk { grid-template-columns: 1fr; } .talk .actions { flex-wrap: wrap; } }
+    .video-slot { position: relative; margin-top: 18px; border-radius: 12px; overflow: hidden; border: 1px solid var(--rule); background: var(--panel); aspect-ratio: 16 / 9; }
+    .video-slot video { width: 100%; height: 100%; display: block; background: #0E1522; }
+    .video-slot video[hidden], .video-placeholder[hidden] { display: none; }
+    .video-placeholder { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; gap: 6px; }
+    .video-placeholder p { margin: 0; color: var(--muted); }
+    footer .links { margin-top: 8px; display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+    footer .links a { color: var(--ink-2); font-size: .85rem; }
     footer { padding: 26px 0 40px; text-align: center; color: var(--muted); font-size: .9rem; }
     footer .wrap { border-top: 1px solid var(--rule); padding-top: 24px; }
     footer strong { color: var(--ink); display: block; font-size: 1.05rem; margin-bottom: 6px; font-weight: 600; }
@@ -114,7 +121,7 @@
       <a class="hide-sm" href="#how">How it works</a>
       <a class="hide-sm" href="#clinic">Clinicians</a>
       <a class="hide-sm" href="#talk">Care agent</a>
-      <a class="signin" href="http://127.0.0.1:8000/login">Sign in</a>
+      <a class="signin" href="#video">Demo</a>
     </nav>
   </div>
 </header>
@@ -125,15 +132,15 @@
       <p class="kicker caps">For Parkinson's care</p>
       <h1>Parkinson's changes hour&nbsp;by&nbsp;hour.</h1>
       <p class="tagline">Neurologists see it a few times a year. TapTrack PD shows them the hours they're missing.</p>
-      <p class="lede">A one-minute check on the wrist, several times a day, tagged with the time since the last levodopa dose.</p>
+      <p class="lede">A short check on the wrist, several times a day, tagged with the time since the last levodopa dose.</p>
       <div class="actions">
-        <a class="btn primary" href="http://127.0.0.1:8000/login">Sign in to the app</a>
-        <a class="btn" href="#clinic">See the dashboard</a>
+        <a class="btn primary" href="#video">Watch the demo</a>
+        <a class="btn" href="#talk">Talk to the care agent</a>
       </div>
     </div>
     <div class="device" aria-label="Screens on the wrist device">
       <div class="screens">
-        <figure style="margin:0"><img src="img/wrist_home_g.png" alt="Wrist home screen: Last check, Good" width="640" height="480"><figcaption>Home</figcaption></figure>
+        <figure style="margin:0"><img src="img/wrist_home_n.png" alt="Wrist main screen: Ready, press Check to start" width="640" height="480"><figcaption>Main screen</figcaption></figure>
         <figure style="margin:0"><img src="img/wrist_flip.png" alt="Wrist test screen: Flip your hand, test 1 of 4" width="640" height="480"><figcaption>Test 1 of 4</figcaption></figure>
         <figure style="margin:0"><img src="img/wrist_taps.png" alt="Wrist test screen: Tap yellow, then green" width="640" height="480"><figcaption>Test 3 of 4</figcaption></figure>
         <figure style="margin:0"><img src="img/wrist_res_r.png" alt="Wrist result screen: Much lower, care team notified" width="640" height="480"><figcaption>Result</figcaption></figure>
@@ -150,16 +157,32 @@
 
   <section id="problem" style="padding-top:12px">
     <div class="wrap grid3">
-      <div class="panel low"><span class="caps">The problem</span><div class="big">4× a day</div><p>Typical levodopa dosing. Each dose wears off before the next one.</p></div>
-      <div class="panel fair"><span class="caps">Today</span><div class="big">2-4 visits</div><p>A year with the neurologist, adjusting timing from memory.</p></div>
-      <div class="panel good"><span class="caps">TapTrack PD</span><div class="big">1 minute</div><p>Per check on the wrist: flips, tremor, taps, voice.</p></div>
+      <div class="panel low"><span class="caps">The problem</span><div class="big">3–5 doses</div><p>Levodopa is often taken several times a day, and each dose can wear off before the next.</p></div>
+      <div class="panel fair"><span class="caps">Today</span><div class="big">A few visits</div><p>A year with the neurologist, adjusting dose timing from what patients remember.</p></div>
+      <div class="panel good"><span class="caps">TapTrack PD</span><div class="big">~1 minute</div><p>Per check on the wrist: hand flips, tremor, taps and voice, guided by voice prompts.</p></div>
+    </div>
+  </section>
+
+  <section id="video" style="padding-top:8px">
+    <div class="wrap">
+      <p class="kicker caps">Demo</p>
+      <h2>See it in action</h2>
+      <div class="video-slot">
+        <video id="demo-video" controls preload="metadata" playsinline poster="img/dashboard.jpg" hidden>
+          <source src="media/demo.mp4" type="video/mp4">
+        </video>
+        <div class="video-placeholder" id="video-placeholder">
+          <span class="caps">Demo video</span>
+          <p>The walkthrough video will appear here.</p>
+        </div>
+      </div>
     </div>
   </section>
 
   <section id="how">
     <div class="wrap">
       <p class="kicker caps">How it works</p>
-      <h2>Wear it all day, dock at night, like a Holter monitor.</h2>
+      <h2>Designed to be worn through the day and docked to sync, like a Holter monitor.</h2>
       <div class="grid4" style="margin-top:22px">
         <div class="panel step blue"><div class="top"><span class="caps">Step 1 of 4</span><span class="caps">Meds</span></div><h3>Log the dose</h3><p>Press red when you take your medicine. Every later check knows how long it has been.</p></div>
         <div class="panel step"><div class="top"><span class="caps">Step 2 of 4</span><span class="caps">Check</span></div><h3>Do the check</h3><p>Press blue. The wrist speaks each step: hand flips, holding still, alternating taps, a steady "ahhh".</p></div>
@@ -183,7 +206,7 @@
     <div class="wrap">
       <p class="kicker caps">For clinicians</p>
       <h2>Wearing-off, visible at a glance.</h2>
-      <p class="lede">Every result is tagged with time since dose. In this example, scores peak 1 to 2.5 hours after a dose and fall about 45 points by 3 to 4 hours: the wearing-off window, measured instead of remembered. One click writes a visit report for the neurologist and a plain-language summary for the patient. Patterns only, never dose advice.</p>
+      <p class="lede">Every result is tagged with time since dose. In the simulated example patient, scores peak 1 to 2.5 hours after a dose and fall about 45 points by 3 to 4 hours: the wearing-off window, measured instead of remembered. One click writes a visit report for the neurologist and a plain-language summary for the patient. Patterns only, never dose advice.</p>
       <div class="shot"><img src="img/dashboard.jpg" alt="Clinician dashboard: latest check, 14-day pattern, today's scores with dose markers, dose-response curve and heatmap by hours since dose" width="1400" height="1180" loading="lazy"></div>
       <div class="grid3" style="margin-top:14px">
         <div class="panel"><span class="caps">14 days</span><h3>Dose-response curve</h3><p>Mean score by hours since the last dose, with spread.</p></div>
@@ -198,13 +221,13 @@
       <div>
         <p class="kicker caps">Care agent</p>
         <h2>It acts on the pattern, not just shows it.</h2>
-        <p>A care agent watches every check. When a result comes back much lower than usual, it texts the caregiver. When a check is missed, it nudges the patient. When a wearing-off pattern appears, it sends the visit report to the clinic and asks for a follow-up. Caregivers can text back any time to ask how the day is going.</p>
+        <p>A care agent watches every check. When a result comes back much lower than usual, it texts the caregiver. When a check is missed, it nudges the patient. When a wearing-off pattern appears, it sends the visit report to the clinic's scheduling agent and asks for a follow-up. Caregivers can text back any time to ask how the day is going.</p>
       </div>
       <div class="device" aria-label="Example iMessage conversation">
         <div class="msg">TapTrack alert: Harriet's 2:41 PM check was much lower than usual (score 38; usual is about 85). It was 3 h 10 min after the last dose. Reply 'today' for a summary.</div>
         <div class="msg me">today</div>
-        <div class="msg">Today: 6 checks, average 52. Lowest was 38 at 2:41 PM, 3 h 10 min after the last dose. 3 doses logged, 1 check missed.</div>
-        <div class="msg">TapTrack sent Harriet's 14-day visit report to Dr. Patel and requested a follow-up visit. Proposed follow-up: Tue Oct 6, 10:30 AM.</div>
+        <div class="msg">Today: 6 checks, average 52. Latest at 2:41 PM was much lower than usual (38). Lowest was 38 at 2:41 PM, 3 h 10 min after the last dose. 3 doses logged, 1 check missed.</div>
+        <div class="msg">TapTrack sent Harriet's 14-day visit report to Dr. Patel (Movement Disorders Clinic) and requested a follow-up visit. Proposed follow-up: Tue Oct 6, 10:30 AM.</div>
       </div>
     </div>
   </section>
@@ -230,7 +253,7 @@
       <div class="panel good" style="text-align:center;padding:36px 28px">
         <span class="caps">TapTrack PD</span>
         <h2 style="margin:8px auto 18px;max-width:22em">The hours between visits, in front of the neurologist.</h2>
-        <div class="actions" style="justify-content:center;margin-top:0"><a class="btn primary" href="http://127.0.0.1:8000/login">Sign in</a><a class="btn" href="#how">How it works</a></div>
+        <div class="actions" style="justify-content:center;margin-top:0"><a class="btn primary" href="#video">Watch the demo</a><a class="btn" href="#how">How it works</a></div>
       </div>
     </div>
   </section>
@@ -239,8 +262,17 @@
 <footer>
   <div class="wrap">
     <strong>Decision support for clinicians. Not a diagnostic device.</strong>
-    Example data shown is fictional. Never change medication without talking to your care team.
+    Example patient data is synthetic. Never change medication without talking to your care team.
+    <div class="links"><a href="https://github.com/ahansoty/taptrack-pd" target="_blank" rel="noopener">Source code</a><a href="https://agentverse.ai/agents/details/agent1q0m06w5n433l7wlefgjw5pmvu0eweuepj3trmgp926wwn7wykjefs3pj0n2/profile" target="_blank" rel="noopener">Agent profile</a><a href="#talk">Care agent chat</a></div>
   </div>
 </footer>
+<script>
+  // show the demo video once media/demo.mp4 exists; otherwise keep the placeholder
+  (function () {
+    var v = document.getElementById("demo-video"), ph = document.getElementById("video-placeholder");
+    v.addEventListener("loadedmetadata", function () { v.hidden = false; ph.hidden = true; });
+    v.load();
+  })();
+</script>
 </body>
 </html>
