@@ -62,7 +62,7 @@ neurologist", "Remind her about the missed check". Copy the **shared chat URL** 
   appears. Decision support only, never dose advice.
 - **GitHub:** https://github.com/ahansoty/taptrack-pd
 - **Agent profile:** https://agentverse.ai/agents/details/agent1q0m06w5n433l7wlefgjw5pmvu0eweuepj3trmgp926wwn7wykjefs3pj0n2/profile
-- **Shared chat URL:** (copy from ASI:One after chatting with the agent)
+- **Shared chat URL:** https://asi1.ai/invite?channelInviteKey=JmTURpQsNJq4W4uO5JbBX7TtstiDyrWyBcQB16qkvSk
 - **Demo video:** (link once uploaded)
 - **Website:** https://taptrack.tech
 
