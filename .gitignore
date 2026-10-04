@@ -16,3 +16,4 @@ photon/node_modules/
 data/start.log
 data/.env*
 data/*.json
+data/video/

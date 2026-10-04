@@ -54,9 +54,11 @@ def _ensure_seed(store):
     """Seed 14 days of synthetic data if storage has none (or it's stale). Demo-replay rows from a
     previous session are cleared so they don't skew the 14-day pattern."""
     store.clear_source("demo")
-    latest = store.checks(time.time() - 2 * 86400, source="synthetic")
-    if not latest and config.env("AUTO_SEED", "true").lower() != "false":
+    today = time.strftime("%Y-%m-%d")
+    # reseed once per day so "today" always has this morning's synthetic history up to server start
+    if store.get_setting("seeded_on") != today and config.env("AUTO_SEED", "true").lower() != "false":
         stats = synth.load_into(store)
+        store.set_setting("seeded_on", today)
         log.info("Seeded synthetic data: %s", stats)
 
 
