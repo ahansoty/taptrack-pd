@@ -28,6 +28,12 @@
   Figma: import `screens/svg/*.svg`, edit, then `python scripts/figma_sync.py` (needs FIGMA_TOKEN, FIGMA_FILE_KEY).
 - Dashboard restyled to the same clinical theme (Inter, navy/teal, soft cards; palette validated for CVD).
 
+- Phase 5: spoken instructions (`python scripts/make_audio.py --upload`). Mono 16-bit WAV at FW_WAV_RATE
+  (16 kHz), 8.3 names (welcome/flip/tremor/taps/voice/done/dose.wav) + beep/go/end.wav (tone API is broken
+  on fw v54). Uploaded to /sounds, re-uploaded automatically when a file changes. ElevenLabs when the key is
+  set, Windows SAPI voice otherwise. Played on the wrist during the check; laptop playback fallback.
+  play_audio_file returned Ok at 8, 16 and 22.05 kHz; audible check pending (QUIET=true in the library).
+
 ## Disabled (missing keys)
 - Tiger Data (DATABASE_URL) -> SQLite fallback
 - Gemini (GEMINI_API_KEY) -> template report

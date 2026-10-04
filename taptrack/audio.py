@@ -17,13 +17,13 @@ log = logging.getLogger("taptrack.audio")
 
 # 8.3 names on the device -> spoken text
 PROMPTS = {
-    "welcome.wav": "Time for your TapTrack check. It takes about one minute. Press the blue button to begin.",
-    "flip.wav": "Hand flips. Turn your palm up and down as fast and as big as you can, for ten seconds. Press blue to start.",
-    "tremor.wav": "Tremor. Rest your arm and hold your wrist as still as you can, for twenty seconds. Press blue to start.",
-    "taps.wav": "Taps. Press the yellow and green buttons one after the other, as fast as you can, for ten seconds. Press blue to start.",
-    "voice.wav": "Voice. Take a breath and say ahhh, steady and loud, for five seconds. Press blue to start.",
+    "welcome.wav": "Time for your one minute check. Press blue to begin.",
+    "flip.wav": "Flip your hand, palm up, palm down, fast. Press blue to start.",
+    "tremor.wav": "Rest your arm and hold still. Press blue to start.",
+    "taps.wav": "Tap yellow, then green, as fast as you can. Press blue to start.",
+    "voice.wav": "Take a breath and say ahhh. Press blue to start.",
     "done.wav": "All done. Your score is",
-    "dose.wav": "Dose logged. Thank you.",
+    "dose.wav": "Dose logged.",
 }
 BEEPS = {"beep.wav": (880, 0.15), "go.wav": (1320, 0.25), "end.wav": (660, 0.35)}
 
