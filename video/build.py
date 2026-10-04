@@ -230,6 +230,22 @@ def scene_wearable(nar):
     return s
 
 
+IRL_LINE = "Here is the same check on a real wrist, sped up six times. This one came back much lower than usual, so the lights turn red."
+
+
+def scene_irl(nar):
+    """The filmed check (video_irl.MOV), sped up, with one narration line."""
+    sys.path.insert(0, str(HERE))
+    import tts
+    tts.OUT.mkdir(parents=True, exist_ok=True)
+    wav = tts.say(IRL_LINE, json.loads((HERE / "script.json").read_text(encoding="utf-8"))["voice_id"])
+    s = Scene("irl")
+    s.say(1.2, {"wav": str(wav), "text": IRL_LINE, "sec": wav_sec(wav)})
+    s.dur = round((IRL_OUT - IRL_IN) / IRL_SPEED + 2.0, 2)
+    s.clip = irl_segment(s.dur, CLIPS / "irl.mp4")
+    return s
+
+
 def scene_live(nar):
     s = Scene("live")
     L = lines_of(nar, "live")
@@ -506,6 +522,7 @@ def subprocess_cwd_ff(args, cwd):
 def write_script_md(scenes, starts, total, path):
     script = json.loads((HERE / "script.json").read_text(encoding="utf-8"))
     titles = {s["id"]: (s["title"], s["visual"]) for s in script["scenes"]}
+    titles["irl"] = ("The real wrist", "video_irl.MOV, sped up 6x, framed on the left")
     out = ["# TapTrack PD demo video: narration script", "",
            f"Length {int(total // 60)}:{int(total % 60):02d}. Voice: {script['voice_name']}. Rebuild: `python video/build.py`.",
            "All patient data is synthetic. Decision support only; no dose advice.", ""]
@@ -594,7 +611,7 @@ def main():
         subprocess.run([sys.executable, str(HERE / "tts.py")], check=True)
     nar = json.loads(nar_path.read_text(encoding="utf-8"))
     t0 = time.time()
-    builders = [scene_hook, scene_wearable, scene_live, scene_pattern, scene_agent, scene_stack, scene_close]
+    builders = [scene_hook, scene_wearable] + ([scene_irl] if IRL.exists() else []) + [scene_live, scene_pattern, scene_agent, scene_stack, scene_close]
     scenes = []
     for b in builders:
         sc = b(nar)
@@ -603,6 +620,8 @@ def main():
     if "--short" not in sys.argv:
         final, total = assemble(scenes, "demo_video", ROOT / "video_script.md")
         print(f"full: {final}  {total:.1f} s")
+    if "--long" in sys.argv:
+        return
     short, st = build_short(nar, scenes)
     print(f"short: {short}  {st:.1f} s  (total build {time.time() - t0:.0f} s)")
 
