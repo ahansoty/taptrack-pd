@@ -7,12 +7,13 @@ driven by the synthetic wearing-off model so the dashboard keeps updating.
 """
 from __future__ import annotations
 
+import hashlib
 import logging
 import queue
 import threading
 import time
 
-from . import audio, config, metrics, scoring, synth
+from . import analysis, audio, config, metrics, scoring, synth
 from .device import BaseDevice, FreeWiliDevice, SimDevice, accel_arrays
 from .storage import Storage
 
@@ -28,6 +29,18 @@ STEPS = [
 
 
 NOT_WORN_HZ = 20.0  # see HARDWARE_NOTES.md: accel events are motion-gated
+
+
+SCREEN_DIR = config.ROOT / "screens" / "fwi"
+HOME_BY_LEVEL = {"good": "home_g", "fair": "home_y", "low": "home_r"}
+RESULT_BY_LEVEL = {"good": "res_g", "fair": "res_y", "low": "res_r"}
+HOME_TEXT = {  # text fallback when screens aren't uploaded
+    "home_n": "TapTrack PD\nblue = check\nred = took meds", "home_g": "TapTrack PD\nLast check: GOOD",
+    "home_y": "TapTrack PD\nLast check:\nLOWER THAN USUAL", "home_r": "TapTrack PD\nLast check:\nMUCH LOWER",
+    "home_due": "TapTrack PD\nCHECK DUE\npress blue", "home_med": "Dose logged",
+}
+LED_PROGRESS = (40, 40, 60)
+LED_COUNT = (0, 0, 90)
 
 
 class Cancelled(Exception):
@@ -56,6 +69,8 @@ class Bridge(threading.Thread):
         self._last_demo = 0.0
         self._last_reconnect = 0.0
         self.demo = False
+        self._home_override = None   # (screen, until_ts)
+        self._last_home = 0.0
 
     # ------------------------------------------------------------ public API (any thread)
     def request_check(self, simulate: bool = False):
@@ -78,9 +93,55 @@ class Bridge(threading.Thread):
         dev.on_press = self.presses.put
         dev.stream_buttons(True)
         dev.stream_accel(True)
-        dev.show("TapTrack PD\nblue = check\nred = took meds")
-        dev.leds(scoring.LED_RGB["none"])
+        dev.leds((0, 0, 0))
         self._sync_sounds()
+        self._sync_screens()
+        self._home(force=True)
+
+    def _sync_screens(self):
+        """Upload wrist screens once (screens/fwi, built after design approval). Tracked by content
+        hash so unchanged screens are never re-sent; never called during a test (~6 s per screen)."""
+        dev = self.device
+        if isinstance(dev, SimDevice):
+            dev.images.update(p.stem for p in SCREEN_DIR.glob("*.fwi"))
+            return
+        if not isinstance(dev, FreeWiliDevice) or not SCREEN_DIR.exists():
+            return
+        known = dict(self.store.get_setting("fw_images", {}) or {})
+        for path in sorted(SCREEN_DIR.glob("*.fwi")):
+            digest = hashlib.sha1(path.read_bytes()).hexdigest()[:12]
+            if known.get(path.stem) == digest:
+                dev.images.add(path.stem)
+                continue
+            dev.show("Setting up\nscreens " + path.stem.replace("_", " "))  # "_" can make text Invalid
+            if dev.upload_image(path, path.stem):
+                known[path.stem] = digest
+                self.store.set_setting("fw_images", known)
+        log.info("device screens: %s", sorted(dev.images))
+
+    # ------------------------------------------------------------ home screen
+    def _desired_home(self) -> str:
+        now = time.time()
+        if self._home_override and now < self._home_override[1]:
+            return self._home_override[0]
+        day0 = analysis.day_start(now)
+        recent = self.store.checks(now - 6 * 3600)
+        for hhmm in config.CHECK_TIMES:
+            h, m = (int(x) for x in hhmm.split(":"))
+            slot = day0 + h * 3600 + m * 60
+            if slot <= now <= slot + 45 * 60 and not any(c["ts"] >= slot - 45 * 60 for c in recent):
+                return "home_due"
+        real = [c for c in recent if c["source"] != "synthetic" and c.get("level") in HOME_BY_LEVEL]
+        last = real[-1] if real else (recent[-1] if recent else None)
+        return HOME_BY_LEVEL.get(last["level"], "home_n") if last else "home_n"
+
+    def _home(self, force=False):
+        dev = self.device
+        if not dev or self.state == "check":
+            return
+        name = self._desired_home()
+        if force or dev.current_screen != name:
+            dev.screen(name, HOME_TEXT.get(name, "TapTrack PD"))
 
     def _sync_sounds(self):
         """Upload beeps (tone API is broken on fw v54) and any ElevenLabs prompts not yet on the device."""
@@ -184,6 +245,9 @@ class Bridge(threading.Thread):
             elif c == "blue":
                 self.run_check()
         self._maybe_passive()
+        if time.time() - self._last_home > 2:
+            self._last_home = time.time()
+            self._home()
         if self.demo and time.time() - self._last_demo > self.demo_interval_s:
             self._last_demo = time.time()
             self.run_check(simulate=True)
@@ -202,10 +266,11 @@ class Bridge(threading.Thread):
         log.info("dose logged (%s)", source)
         dev = self.device
         if dev:
-            dev.leds((0, 0, 90))
             if not dev.play("dose.wav"):
                 dev.play("go.wav") or audio.play_local("dose.wav", audio.PROMPTS["dose.wav"])
-            dev.show("Dose logged\n" + time.strftime("%H:%M"))
+            if self.state != "check":
+                self._home_override = ("home_med", time.time() + 4)
+                self._home()
         self.publish({"type": "dose", "ts": ts, "source": source})
 
     def _maybe_passive(self):
@@ -237,12 +302,16 @@ class Bridge(threading.Thread):
         if not (name in dev.sounds and dev.play(name)) and not isinstance(dev, SimDevice):
             audio.play_local(name)
 
-    def _wait(self, seconds):
-        """Pump the device; red logs a dose, gray cancels."""
-        end = time.time() + seconds
+    def _wait(self, seconds, progress=False):
+        """Pump the device; red logs a dose, gray cancels. progress=True fills the 7 LEDs."""
+        start = time.time()
+        end = start + seconds
+        lit = None
         while time.time() < end:
             self.device.pump(0.03)
             self._drain(allow_blue=False)
+            if progress and seconds > 0:
+                lit = self.device.progress((time.time() - start) / seconds, LED_PROGRESS, lit)
 
     def _drain(self, allow_blue):
         got_blue = False
@@ -276,9 +345,12 @@ class Bridge(threading.Thread):
             dev.stream_audio(True)
         # taps: drain presses ourselves so yellow/green are captured, not acted on
         if name == "taps":
-            end = time.time() + seconds
+            start = time.time()
+            end = start + seconds
+            lit = None
             while time.time() < end:
                 dev.pump(0.02)
+                lit = dev.progress((time.time() - start) / seconds, LED_PROGRESS, lit)
                 while not self.presses.empty():
                     c = self.presses.get_nowait()
                     if c == "gray":
@@ -288,7 +360,7 @@ class Bridge(threading.Thread):
             taps = [(t - t_start, c) for t, c in list(dev.presses) if t >= t_start and c in ("yellow", "green")]
             result = metrics.alternating_taps(taps, seconds)
         else:
-            self._wait(seconds)
+            self._wait(seconds, progress=True)
             if name == "voice":
                 dev.stream_audio(False)
                 result = metrics.voice(dev.audio, config.MIC_RATE_HZ)
@@ -321,28 +393,35 @@ class Bridge(threading.Thread):
         source = "demo" if isinstance(dev, SimDevice) else "device"
         self.publish({"type": "check_started", "ts": started, "source": source})
         try:
-            dev.leds((0, 0, 60))
+            dev.leds((0, 0, 0))
             for name, seconds, text in STEPS:
                 self.step = name
-                dev.show(text + "\nblue = start")
+                # one instruction per screen: the test screen, then "get ready" while waiting for blue
+                dev.screen(name, text + "\nblue = start")
                 self.publish({"type": "step", "step": name, "phase": "instruct", "seconds": seconds})
                 self._say(f"{name}.wav")
+                if not (self.auto_advance or isinstance(dev, SimDevice)):
+                    self._wait(2.5)
+                    dev.screen("ready", "Get ready\npress blue")
                 self._wait_for_go()
+                dev.screen(name, text)
+                # countdown on the LEDs: all 7 blue, emptying in thirds with a beep each
+                lit = dev.progress(1.0, LED_COUNT)
                 for n in (3, 2, 1):
-                    dev.show(f"{text.splitlines()[0]}\n{n}")
                     self._beep("beep.wav")
                     self._wait(0.7 * min(1.0, self.duration_scale * 10))
-                dev.show(text.splitlines()[0] + "\nGO")
+                    lit = dev.progress((n - 1) / 3, LED_COUNT, lit)
                 self._beep("go.wav")
                 self.publish({"type": "step", "step": name, "phase": "record", "seconds": seconds})
                 r = self._record(name, seconds * self.duration_scale)
                 self._beep("end.wav")
+                dev.progress(0, LED_PROGRESS, 7)
                 results[name] = r
                 self.publish({"type": "step", "step": name, "phase": "done", "result": r})
             complete = True
         except Cancelled:
             complete = False
-            dev.show("Check cancelled")
+            dev.leds((0, 0, 0))
             self.publish({"type": "check_cancelled"})
         finally:
             self.step = None
@@ -350,6 +429,7 @@ class Bridge(threading.Thread):
         if dev is not prev_dev:
             self.device = prev_dev
         self.state = prev_state if prev_state != "check" else "idle"
+        self._home(force=True)
         return row
 
     def _finish(self, results, complete, source):
@@ -363,13 +443,15 @@ class Bridge(threading.Thread):
         dev = self.device
         dev.leds(scoring.LED_RGB[s["level"]])
         if s["score"] is not None:
-            label = {"good": "GOOD", "fair": "FAIR", "low": "LOW"}[s["level"]]
-            dev.show(f"Score {s['score']}\n{label}")
+            label = {"good": "GOOD", "fair": "LOWER THAN USUAL", "low": "MUCH LOWER"}[s["level"]]
+            # the screen shows the word; the exact score is spoken
+            dev.screen(RESULT_BY_LEVEL[s["level"]], f"Check done\n{label}")
             if not (("done.wav" in dev.sounds) and dev.play("done.wav")) and not isinstance(dev, SimDevice):
                 audio.play_local("done.wav", audio.PROMPTS["done.wav"])
             self._wait(2.2 if not isinstance(dev, SimDevice) else 0.1)
             if not dev.say_number(s["score"]) and not isinstance(dev, SimDevice):
                 audio.play_local(text=str(s["score"]))
+            self._wait(4.0 if not isinstance(dev, SimDevice) else 0.1)
         self.publish({"type": "check_result", **row})
         for fn in self.listeners:
             try:

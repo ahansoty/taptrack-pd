@@ -32,6 +32,8 @@ class BaseDevice:
         self._buttons = {}
         self.buttons_on = False
         self.sounds: set[str] = set()     # .wav names present on the device
+        self.images: set[str] = set()     # screen names (.fwi) present on the device
+        self.current_screen = None
 
     # outputs -------------------------------------------------------------
     def show(self, text: str) -> bool: return True
@@ -39,6 +41,29 @@ class BaseDevice:
     def say_number(self, n: int) -> bool: return True
     def play(self, name: str) -> bool: return False
     def upload(self, local_path, name: str) -> bool: return False
+    def show_image(self, name: str) -> bool: return False
+    def upload_image(self, local_path, name: str) -> bool: return False
+    def led(self, io: int, rgb) -> bool: return True
+
+    def screen(self, name: str, fallback_text: str) -> bool:
+        """Full-screen image if uploaded, else the text fallback."""
+        self.current_screen = name
+        if name in self.images and self.show_image(name):
+            return True
+        return self.show(fallback_text)
+
+    def progress(self, frac: float, rgb, lit: int | None = None) -> int:
+        """7 board LEDs as a progress bar. Only changes the LEDs that differ (serial is slow)."""
+        n = max(0, min(7, int(round(frac * 7))))
+        prev = -1 if lit is None else lit
+        if n == prev:
+            return n
+        for io in range(7):
+            on = io < n
+            was = prev >= 0 and io < prev
+            if prev < 0 or on != was:
+                self.led(io, rgb if on else (0, 0, 0))
+        return n
 
     # inputs --------------------------------------------------------------
     def stream_accel(self, on: bool) -> bool: return True
@@ -142,6 +167,7 @@ class FreeWiliDevice(BaseDevice):
                 self.dev.enable_audio_events(False)
                 for io in range(7):
                     self.dev.set_board_leds(io, 0, 0, 0)
+                self.dev.reset_display()  # back to the FREE-WILi menu on exit
                 self.dev.close()
             except Exception:
                 pass
@@ -184,6 +210,23 @@ class FreeWiliDevice(BaseDevice):
         ok = self._call("show_text_display", self.dev.show_text_display, text) if self.dev else False
         if self.buttons_on:  # set text before (re)enabling buttons: see HARDWARE_NOTES.md
             self._call("enable_button_events", self.dev.enable_button_events, True, 10)
+        return ok
+
+    def led(self, io, rgb):
+        r, g, b = rgb
+        return self._call("set_board_leds", self.dev.set_board_leds, io, r, g, b) if self.dev else False
+
+    def show_image(self, name):
+        # bare filename works, "/images/x.fwi" returns Invalid (HARDWARE_NOTES.md)
+        ok = self._call("show_gui_image", self.dev.show_gui_image, f"{name}.fwi") if self.dev else False
+        if self.buttons_on:
+            self._call("enable_button_events", self.dev.enable_button_events, True, 10)
+        return ok
+
+    def upload_image(self, local_path, name):
+        ok = self._call("send_file", self.dev.send_file, str(local_path), f"/images/{name}.fwi") if self.dev else False
+        if ok:
+            self.images.add(name)
         return ok
 
     def leds(self, rgb):
@@ -251,6 +294,17 @@ class SimDevice(BaseDevice):
 
     def leds(self, rgb):
         self.log.append(f"leds: {rgb}")
+        return True
+
+    def led(self, io, rgb):
+        return True
+
+    def show_image(self, name):
+        self.log.append(f"image: {name}")
+        return name in self.images
+
+    def upload_image(self, local_path, name):
+        self.images.add(name)
         return True
 
     def say_number(self, n):

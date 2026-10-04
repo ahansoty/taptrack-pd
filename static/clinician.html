@@ -4,14 +4,17 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>TapTrack PD · Clinician</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232a78d6'/><path d='M5 18h5l3-8 4 14 3-8h7' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230F766E'/><path d='M5 18h5l3-8 4 14 3-8h7' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/app.css">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
 <header class="top">
   <div class="brand">
-    <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M5 18h5l3-8 4 14 3-8h7" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--brand)"/><path d="M6 17h5l3-7 4 13 3-6h5" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
     TapTrack PD
   </div>
   <div class="who">Patient <strong id="pname">…</strong> · <span id="sched">levodopa</span></div>
@@ -44,7 +47,7 @@
     <!-- today -->
     <section class="card span-8" aria-labelledby="h-today">
       <div class="row"><h2 id="h-today">Today</h2><span class="spacer"></span><span class="muted" id="today-date"></span></div>
-      <p class="sub">Each dot is one wrist check. Purple markers are logged levodopa doses. Shaded band = good (70+).</p>
+      <p class="sub">Each dot is one wrist check. Dark markers are logged levodopa doses. Shaded band = good (70+).</p>
       <div id="today-chart" aria-describedby="today-desc"></div>
       <p id="today-desc" class="sr-only"></p>
       <div class="legend"><span class="key"><span class="ln" style="border-color:var(--series-1)"></span>Composite score</span>
@@ -59,7 +62,7 @@
       <p class="sub" id="live-sub">Waiting for the next check.</p>
       <div class="steps" id="steps"></div>
       <div id="live-result" aria-live="polite"></div>
-      <h2 style="font-size:.95rem;margin-top:14px">Activity</h2>
+      <h2 style="margin-top:16px">Activity</h2>
       <ul class="feed" id="feed" aria-live="polite"></ul>
     </section>
 

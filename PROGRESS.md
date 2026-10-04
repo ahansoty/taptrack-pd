@@ -21,6 +21,13 @@
   missed checks, messages). Light + dark, keyboard accessible, tables for every chart, phone width OK.
   Footer: "Decision support for clinicians. Not a diagnostic device."
 
+- Wrist screens: 14 full-screen 320x240 images (`screens/design.py`, theme "clinical" chosen from 3 directions
+  in `screens/themes.png`), converted to .fwi and uploaded once (hash manifest, never during a test).
+  Home screen follows the latest result / check due / dose logged; tests use one instruction per screen;
+  7 board LEDs show the countdown and progress; the exact score is spoken, screens show the word.
+  Figma: import `screens/svg/*.svg`, edit, then `python scripts/figma_sync.py` (needs FIGMA_TOKEN, FIGMA_FILE_KEY).
+- Dashboard restyled to the same clinical theme (Inter, navy/teal, soft cards; palette validated for CVD).
+
 ## Disabled (missing keys)
 - Tiger Data (DATABASE_URL) -> SQLite fallback
 - Gemini (GEMINI_API_KEY) -> template report

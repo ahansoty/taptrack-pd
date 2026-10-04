@@ -4,7 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>TapTrack PD · Caregiver</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232a78d6'/><path d='M5 18h5l3-8 4 14 3-8h7' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230F766E'/><path d='M5 18h5l3-8 4 14 3-8h7' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/app.css">
   <style>
     .status-big { font-size: 1.6rem; font-weight: 700; margin: 4px 0 8px; }
@@ -17,7 +20,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top">
   <div class="brand">
-    <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M5 18h5l3-8 4 14 3-8h7" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--brand)"/><path d="M6 17h5l3-7 4 13 3-6h5" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
     TapTrack PD
   </div>
   <div class="who">Caring for <strong id="pname">…</strong></div>
@@ -48,7 +51,7 @@
     </section>
     <section class="card span-7" aria-labelledby="h-day">
       <h2 id="h-day">Today at a glance</h2>
-      <p class="sub">Each dot is one check. Purple markers are doses. Higher is better.</p>
+      <p class="sub">Each dot is one check. Dark markers are doses. Higher is better.</p>
       <div id="today-chart"></div>
     </section>
     <section class="card span-5" aria-labelledby="h-msgs">

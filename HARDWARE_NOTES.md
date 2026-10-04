@@ -53,3 +53,13 @@ Requested interval vs real rate (device flat, 3 s windows):
 - Beeps = uploaded `beep.wav` files (tone API broken).
 - Voice test uses ~8 kHz mic samples, DC removed, 100 ms RMS windows.
 - Instruction audio uploaded at 16 kHz by default (`FW_WAV_RATE`), 8 kHz if uploads are too slow.
+
+## Display (verified 2026-10-03)
+- Resolution **320 x 240**, landscape. A 320x240 calibration image filled the screen exactly with all four edges visible.
+- `show_gui_image("name.fwi")` works with the **bare filename**; `"/images/name.fwi"` returns `Err('Invalid')`.
+- Upload with `send_file(local, "/images/name.fwi")`: 153,624 bytes (header + 320x240x2) in ~5.5 s. All 14 screens: 76 s.
+- `freewili.image.convert` maps any pixel that truncates to RGB565 0 to transparent; `screens/design.py` lifts
+  such pixels to (9,5,9) and the palettes avoid pure black.
+- Buttons left to right under the screen: gray, yellow, green, blue, red (on-screen legend matches).
+- Some `show_text_display` strings return `Invalid` (seen with underscores); screens are images now, text is
+  only a fallback.
