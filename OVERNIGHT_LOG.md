@@ -33,3 +33,13 @@ _Morning summary goes here when the night is done._
   message format; "designed to be worn ... docked" instead of implying it is wireless today). Removed links to
   127.0.0.1 (broken for visitors). Added demo-video slot (shows docs/media/demo.mp4 when present), footer links to source
   code and agent profile. All external links return 200; all anchors resolve. Not pushed yet (branch).
+- 03:50 Docs rewritten to match the final system: README (agents + addresses table as the hackpack requires, plain
+  ./start.sh, 8 kHz/55% audio, demo script that only uses real behavior), REPORT.md (sponsor accuracy: TimescaleDB
+  runs on Neon not Tiger Cloud; Figma import path ready but not synced; overnight changes), SUBMISSION.md (repo,
+  addresses, shared chat link). Removed --demo references.
+- 04:00 SECURITY: full-history scan (33 commits, all branches) for every secret value in .env, the GitHub token and both
+  phone numbers: 0 hits anywhere. .env, agent/.seed and the agent state file are ignored.
+  LEAK FOUND: `data/.session_key` (the dashboard's sign-in cookie signing key) was tracked and pushed to main on
+  Oct 4 (commit 14f3cfd). Impact: someone could forge a dashboard sign-in cookie for the local dashboard (demo-grade
+  sign-in; no patient data beyond synthetic). Fixed: untracked + ignored, and a new key generated locally, so the
+  published one no longer works. It remains in git history (no history rewrite, per your rules).
