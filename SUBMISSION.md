@@ -12,18 +12,18 @@ Requirements we meet:
 - [x] Meaningful tool execution: reads the TapTrack API, generates the visit report, sends iMessages via Photon
 - [x] Multi-agent: `taptrack-care` sends `FollowUpRequest` to `taptrack-clinic`, which replies with a `FollowUpOffer`
 - [x] Innovation Lab badges in `agent/README.md` and the repo README
-- [ ] Public GitHub repo with README listing agent names + addresses (you: push the repo, then paste addresses below)
-- [ ] 3 to 5 minute demo video
+- [x] Public GitHub repo with README listing agent names + addresses: https://github.com/ahansoty/taptrack-pd
+- [ ] 3 to 5 minute demo video (backup cut built overnight: `demo_video.mp4`; review before uploading)
 - [ ] Registered through the MHacks ASI:One Submission Agent
 - [ ] Devpost submission
 
 ### 1. Run the agent and connect the mailbox (one time)
 ```bash
-./start.sh                                   # or: start the server, then:
+./start.sh                                   # starts everything; or just the agents:
 agent/.venv/Scripts/python agent/taptrack_agent.py
 ```
-The log prints both addresses and an **Agent inspector** link. Open it, click **Connect**, choose **Mailbox**.
-The log then says the mailbox is registered in Agentverse. Keep the process running during judging.
+Done 2026-10-04: the mailbox is registered in Agentverse (the log says "Successfully registered as mailbox agent").
+Keep `./start.sh` running during judging; the agent only answers while this laptop runs it.
 
 In the Inspector, open **Agent Profile** and set:
 - Name/handle: `taptrack-care` (handle e.g. `@taptrack-pd`)
@@ -31,11 +31,11 @@ In the Inspector, open **Agent Profile** and set:
   sends the neurologist visit report and books a follow-up. Decision support only."
 - Keywords: Parkinson's, levodopa, wearing-off, caregiver, neurology, wearable, iMessage
 
-Agent addresses (fill in from the startup log):
+Agent addresses:
 | Agent | Address |
 |---|---|
-| taptrack-care | `agent1q0m06w5n433l7wlefgjw5pmvu0eweuepj3trmgp926wwn7wykjefs3pj0n2` (from this machine's seed; recheck the log) |
-| taptrack-clinic | printed at startup |
+| taptrack-care | `agent1q0m06w5n433l7wlefgjw5pmvu0eweuepj3trmgp926wwn7wykjefs3pj0n2` |
+| taptrack-clinic | `agent1qtnz8722nfr5vqsjd3qdwwgevuwnu4d3e5lvgcywnavd2j8xnvycyfsp8px` |
 
 ### 2. Test in ASI:One
 From the agent profile click **Chat with Agent** (opens chat.asi1.ai), or search ASI:One for "TapTrack Parkinson's".

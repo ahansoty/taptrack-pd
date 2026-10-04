@@ -28,3 +28,8 @@ _Morning summary goes here when the night is done._
   video, since "today" is empty at night). Legacy "(s)" in old activity entries tidied on display only (no data edits).
 - 03:15 Found and fixed a stray backspace character inside a regex (escaping accident); added a test that fails if any
   source file contains control characters. UI audit: no problems found.
+- 03:30 Website: corrected claims to match the system (main screen image now "Ready"; "3-5 doses"/"a few visits"/
+  "~1 minute"; "simulated example patient"; report goes to the clinic's scheduling agent; example texts match the real
+  message format; "designed to be worn ... docked" instead of implying it is wireless today). Removed links to
+  127.0.0.1 (broken for visitors). Added demo-video slot (shows docs/media/demo.mp4 when present), footer links to source
+  code and agent profile. All external links return 200; all anchors resolve. Not pushed yet (branch).

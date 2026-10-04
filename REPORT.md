@@ -1,6 +1,6 @@
 # TapTrack PD: project report
 
-_Status as of Sunday Oct 4, 2026, ~2 AM. MHacks 2026. Devpost deadline 12:00 PM; judging 12:30 to 2:30 PM._
+_Status as of Sunday Oct 4, 2026, ~4 AM. MHacks 2026. Devpost deadline 12:00 PM; judging 12:30 to 2:30 PM._
 
 > **Parkinson's changes hour by hour, but neurologists see it a few times a year. TapTrack PD shows them the hours they're missing.**
 
@@ -38,10 +38,10 @@ neurologist a visit report with a follow-up request.
 ### 2.1 The wrist (FREE-WILi)
 - **Buttons** (left to right under the screen: gray, yellow, green, blue, red): blue starts a check, red logs a dose,
   gray cancels, yellow/green are the tap test.
-- **Screens**: 15 full-screen 320x240 images designed in the "clinical" theme (off-white, navy, teal; spaced-caps labels;
+- **Screens**: 15 full-screen 320x240 images (main screen, test steps, "Get ready", "Calculating", three results, plus spare status variants) designed in the "clinical" theme (off-white, navy, teal; spaced-caps labels;
   status card with a colored stripe; button legend that lines up with the physical buttons). Designed as SVG frames
   (importable into Figma), rendered to PNG, converted to `.fwi`, uploaded once with a content-hash manifest.
-- **Flow**: main screen whenever idle. A check runs four tests, each with an instruction screen, a spoken prompt
+- **Flow**: main screen ("Ready") whenever idle. A check runs four tests, each with an instruction screen, a spoken prompt
   (ElevenLabs), "Get ready", an LED countdown, and an LED progress bar while recording. Then "Calculating" (about a
   second), then the result **word** on screen (Good / Lower than usual / Much lower) while the **exact score is spoken**.
   The result stays for 60 seconds or until any button press, then the main screen returns. Red shows "Dose logged" for 3 s.
@@ -60,6 +60,8 @@ neurologist a visit report with a follow-up request.
   analysis works on the wrist, and a check flags "not worn" if the stream is too slow.
 - USB delivers events in bursts, so tap timing uses the device's own timestamps and bursty accelerometer timing is evened out.
 - The firmware's tone command fails (v54), so beeps are uploaded WAV files.
+- The device plays every WAV at **8 kHz** (16 kHz files sounded slowed and deep), and has no volume API: prompts are
+  generated at 8 kHz and scaled to 55% volume. The built-in spoken score number plays at the device's own level.
 
 ### 2.3 Scoring
 Each metric is compared with the patient's **own baseline** (mean and SD from early-days ON-state checks) and mapped to
@@ -90,10 +92,10 @@ fallback without a key.
 
 ### 2.7 Care agent (Fetch.ai) and messages (Photon)
 - `taptrack-care` (Agentverse mailbox, Agent Chat Protocol, discoverable in ASI:One) polls the API every 3 s and decides:
-  - red check → caregiver iMessage (score, usual, hours since dose); in demo mode, after every check
+  - "Much lower" check → caregiver iMessage (score, usual, hours since dose); Good and Lower-than-usual checks never alert
   - missed check (within 90 min) → patient reminder
-  - wearing-off pattern → generate report → `FollowUpRequest` to `taptrack-clinic` → clinic replies with a slot → caregiver
-    iMessage ("report sent, follow-up Tue Oct 6, 10:30 AM")
+  - wearing-off pattern → generate report → `FollowUpRequest` to `taptrack-clinic` (a simulated clinic scheduling
+    agent) → clinic replies with a slot → caregiver iMessage; at most once a week, or on request in chat ("report sent, follow-up Tue Oct 6, 10:30 AM")
 - In ASI:One it answers "how is she doing today?", "and yesterday?", "send the visit report", "book a follow-up",
   "remind her about the missed check".
 - **Photon Spectrum** sidecar (Node, `spectrum-ts`, cloud iMessage, no Mac) sends the texts and answers caregiver
@@ -105,51 +107,63 @@ fallback without a key.
 | Sponsor | Role in TapTrack PD | Status |
 |---|---|---|
 | **FREE-WILi** | The wearable: buttons, accelerometer, mic, screen, LEDs, speaker, number speech | Working; verified with real checks |
-| **Tiger Data** | TimescaleDB hypertables for checks, doses, passive tremor | Working on Neon (TimescaleDB 2.24) |
+| **Tiger Data** | TimescaleDB (Tiger Data's open-source extension) hypertables for checks, doses, passive tremor | Working; hosted on Neon Postgres with TimescaleDB 2.24, not on Tiger Cloud |
 | **FinchNode** | Patient record + medications; checks queued as FHIR Observations for write-back | Working (public demo record); sandbox patient needs consent; API is read-only |
 | **Gemini** | Neurologist report + patient summary, patterns only | Working (`gemini-3.5-flash-lite`, ~9 s) |
 | **ElevenLabs** | Spoken test instructions on the wrist (voice "Sarah") | Working; prompts on the device |
 | **Fetch.ai** | Care agent + clinic agent; ASI:One chat; decides when to notify | Working; registered on Agentverse (mailbox) |
-| **Photon** | iMessage alerts, reminders, two-way caregiver chat via Spectrum | Working; sends and replies verified |
-| **Figma** | Wrist screens as SVG frames; `scripts/figma_sync.py` pulls edits back via the Figma API | Pipeline ready; needs `FIGMA_TOKEN` to sync |
+| **Photon** | iMessage alerts, reminders, two-way caregiver chat via Spectrum | Working; sends and replies verified on a real phone |
+| **Figma** | Wrist screens exported as SVG frames that import into Figma; `scripts/figma_sync.py` can pull edits back via the Figma API | Import path ready; not synced from a Figma file yet (no `FIGMA_TOKEN`) |
 | **.tech domain** | https://taptrack.tech (GitHub Pages, HTTPS) | Live |
 | **Notability** | Screenshots + note for Devpost | To do |
 
 ## 4. What has been verified
 
-- 49 automated tests: metrics on synthetic signals, scoring, storage, synthetic data, API, sign-in and roles, report
-  guard, FinchNode parsing, notifications/chat, watch flow (result hold and dismiss), disconnect → demo replay,
-  "never stuck on Calculating".
+- 51 automated tests: metrics on synthetic signals, scoring, storage, synthetic data, API, sign-in and roles, report
+  guard, FinchNode parsing, notifications/chat (plurals, Good checks never alert), watch flow (calc → result hold →
+  dismiss; wrist result matches dashboard level), disconnect handling, "never stuck on Calculating", source hygiene.
 - Real device: full checks run end to end (flips 4.0/s, tremor detected at 5.5 Hz when shaken on purpose, taps, voice).
 - Live pipeline: wrist → database → dashboard over websocket (~1 s after the last test).
 - Agent: wearing-off → Gemini report → clinic agent offer → caregiver iMessage delivered; red check → alert delivered;
-  caregiver "today" reply answered.
+  caregiver "today" reply answered. Chat-protocol message routed through Agentverse (the ASI:One path) answered with
+  live data (`agent/test_chat.py`).
+- Hands-free device check: all 15 screens display, LED countdown/progress/result colors, prompts play.
+- UI audit (`scripts/ui_audit.py`): sign-in validation, both roles and redirects, report, FinchNode card, phone width;
+  no broken text or console errors.
 
 ## 5. What still needs to be done
 
-| # | Task | Who | Notes |
-|---|---|---|---|
-| 1 | Turn sound on and test the spoken prompts | You | Set `QUIET=false` in `.env`, restart, do one check |
-| 2 | Morning restart before the demo | You | `./start.sh --demo` around 11 AM so today's chart has the morning |
-| 3 | ASI:One test chat + shared link | You | Agent profile → Chat with Agent; copy the shared chat URL |
-| 4 | MHacks Submission Agent | You | Answers to paste are in `SUBMISSION.md` |
-| 5 | Demo video (3-5 min) | You | `python scripts/record_walkthrough.py` after 10 AM for B-roll; add narration + wrist shots |
-| 6 | Devpost | You | Repo, video, agent names/addresses, table number, Notability screenshots |
-| 7 | FinchNode sandbox consent (optional) | You | https://finchnode.com/connect/cs_83838ff6beb13e5e1792 |
-| 8 | Rotate keys after the hackathon | You | GitHub token and API keys were pasted in chat |
-| 9 | Second real check to confirm the tap-timing fix | You + me | Raw data saves to `data/raw/` for analysis |
+See OVERNIGHT_LOG.md for the ordered morning checklist. In short:
 
-Known limitations to state honestly in the pitch:
-- Sign-in is demo-grade (no password); the dashboard runs on the laptop, so the website's Sign in button only works there.
-- FinchNode has no write API; write-back is a local FHIR queue.
-- No demo patient has a levodopa order, so dose times come from TapTrack's schedule.
-- The composite score's baseline comes from synthetic data; a real deployment would calibrate per patient.
+| # | Task | Who |
+|---|---|---|
+| 1 | Start `./start.sh` (no flags) before judging with the FREE-WILi plugged in; leave it running | You |
+| 2 | Do one real check on the wrist to confirm audio level and that the wrist and dashboard show the same result | You |
+| 3 | Register both phones under Users in Photon if not done; one test message from the dashboard | You |
+| 4 | Review the backup video (`demo_video.mp4`), swap in real wrist footage if filmed, upload | You |
+| 5 | MHacks ASI:One Submission Agent + Devpost (answers in SUBMISSION.md) | You |
+| 6 | Rotate the keys pasted in chat after the hackathon | You |
+
+Known limitations to state honestly:
+- Sign-in is demo-grade (no password); the dashboard runs on the laptop.
+- FinchNode has no write API; write-back is a local FHIR queue. No demo patient has a levodopa order, so dose times
+  come from TapTrack's schedule.
+- The 14-day history and the clinic agent are simulated; the baseline comes from the simulated history.
+- The wrist is tethered by USB today; the design target is all-day wear with docking to sync.
+
+### Changes made overnight (Oct 4)
+- Wrist: main screen when idle; "Calculating" then the result for 60 s or until a button; 8 kHz audio at 55%.
+- Never stuck on "Calculating": the result shows before saving, and the database reconnects when Neon sleeps.
+- Dashboard: sign-in with caregiver/clinician roles; charts clip to the plot and the day window covers every check;
+  FinchNode record card with record ID and source EHR; synthetic data labeled; `?date=` day view; faster status call.
+- Agent/iMessage: proper plurals; Good checks never alert (demo mode off for judging).
+- Website: claims corrected to match the system; demo video slot; links to the agent chat, profile and source.
 
 ## 6. How to run
 
 ```bash
 cd ~/Downloads/hackathon/taptrack-pd
-./start.sh --demo            # server + wrist + iMessage sidecar + Fetch.ai agents (Ctrl+C stops all)
+./start.sh                   # server + wrist + iMessage sidecar + Fetch.ai agents (Ctrl+C stops all)
 # App: http://127.0.0.1:8000  (sign in, pick Clinician or Caregiver)
 # Site: https://taptrack.tech
 .venv/Scripts/python -m pytest -q

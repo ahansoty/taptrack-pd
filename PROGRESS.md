@@ -72,7 +72,7 @@
 
 ## You need to do
 1. Add CAREGIVER_PHONE and PATIENT_PHONE (E.164) to .env and register both under Users in the Photon dashboard;
-   restart `./start.sh --demo`. Rotate the keys pasted in chat after the hackathon.
+   restart `./start.sh`. Rotate the keys pasted in chat after the hackathon.
 2. Agentverse: open the "Agent inspector" link printed in data/agent.log -> Connect -> Mailbox; fill the Agent Profile.
 3. Push a public GitHub repo, record the 3-5 min video, register with the MHacks ASI:One Submission Agent (SUBMISSION.md).
 4. Before the demo: set QUIET=false, and confirm you can hear the wrist prompts (t8k/t16k/t22k all played; audibility unchecked).
