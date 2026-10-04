@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/app.css?v=3">
+  <link rel="stylesheet" href="/static/app.css?v=4">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -102,9 +102,10 @@
       <div id="rep-neuro" role="tabpanel" aria-labelledby="tab-neuro" class="report"><p class="muted">No report generated yet.</p></div>
       <div id="rep-patient" role="tabpanel" aria-labelledby="tab-patient" class="report" hidden></div>
     </section>
-    <section class="card span-5" aria-labelledby="h-record">
-      <div class="row"><h2 id="h-record">Patient record</h2><span class="spacer"></span><span class="muted" id="record-src"></span></div>
-      <p class="sub" id="record-sub">Loading from FinchNode…</p>
+    <section class="card span-5 finch" aria-labelledby="h-record">
+      <div class="row"><h2 id="h-record">Patient record from FinchNode</h2><span class="spacer"></span><span class="finch-badge" id="record-src">FinchNode</span></div>
+      <dl class="finch-meta" id="record-meta"><div><dt>Loading</dt><dd>from FinchNode…</dd></div></dl>
+      <p class="sub" id="record-sub"></p>
       <div class="tiles" id="record"></div>
     </section>
 
@@ -124,8 +125,8 @@
 </main>
 <footer class="foot"><strong>Decision support for clinicians. Not a diagnostic device.</strong>
   <div class="muted" id="foot-meta"></div></footer>
-<script src="/static/common.js?v=3"></script>
+<script src="/static/common.js?v=4"></script>
 <script>TT.session();</script>
-<script src="/static/clinician.js?v=3"></script>
+<script src="/static/clinician.js?v=4"></script>
 </body>
 </html>

@@ -138,9 +138,13 @@ function agentFeed(actions) {
 }
 
 function renderRecord(rec, outbox) {
-  if (!rec) { $("record-sub").textContent = "FinchNode record not loaded (offline or disabled). Using the TapTrack schedule."; return; }
-  $("record-src").className = "caps";
-  $("record-src").textContent = `FinchNode · ${rec.mode.startsWith("sandbox") ? "sandbox" : "demo record"}`;
+  if (!rec) { $("record-meta").innerHTML = "<div><dt>Status</dt><dd>FinchNode unreachable; using the TapTrack schedule</dd></div>"; return; }
+  $("record-src").textContent = rec.mode.startsWith("sandbox") ? "FinchNode · sandbox" : "FinchNode · live API";
+  const row = (k, v) => (v ? `<div><dt>${k}</dt><dd>${TT.esc(v)}</dd></div>` : "");
+  $("record-meta").innerHTML =
+    row("Record ID", rec.record_id || rec.subject) +
+    row("Source EHR", rec.source_name) +
+    row("Pulled from", `${rec.api_host || "api.finchnode.com"} · ${rec.fetched_at ? TT.fmtTime(rec.fetched_at) : ""}`);
   $("record-sub").textContent = `${rec.name || "Patient"}${rec.age ? `, ${rec.age}` : ""}${rec.gender ? `, ${rec.gender}` : ""} · dose times from ${rec.levodopa_order ? "FinchNode order" : "TapTrack schedule"}`;
   const queued = outbox.filter((o) => o.kind === "fhir_observation").length;
   const tiles = [
@@ -165,6 +169,7 @@ async function loadAll() {
   ]);
   TT.api("/api/outbox?limit=200").then((o) => renderRecord(status.patient.record, o)).catch(() => renderRecord(status.patient.record, []));
   $("pname").textContent = status.patient.name;
+  if (status.patient.record) $("pname").title = `FinchNode record ${status.patient.record.record_id || status.patient.record.subject}`;
   TT.deviceBadge($("device"), status.device);
   const f = status.features;
   pill("agent-pill", f.agent, "Agent online", "Agent offline");

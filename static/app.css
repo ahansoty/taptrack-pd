@@ -210,3 +210,13 @@ nav.views { flex-wrap: wrap; }
 .stack { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
 #record .tile .value { font-size: 1.4rem; }
 #record.tiles { grid-template-columns: repeat(2, 1fr); }
+
+/* FinchNode integration card: labeled so the data source is unmistakable */
+.finch-badge { display: inline-flex; align-items: center; gap: 6px; background: var(--accent); color: #fff; border-radius: 6px;
+  padding: 4px 10px; font-size: .62rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.finch-badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #fff; }
+.finch-meta { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; margin: 4px 0 10px; font-size: .86rem; }
+.finch-meta div { display: contents; }
+.finch-meta dt { font-size: .62rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); align-self: center; }
+.finch-meta dd { margin: 0; color: var(--ink); font-variant-numeric: tabular-nums; }
+.finch-meta div:first-child dd { font-family: ui-monospace, Consolas, monospace; font-size: .82rem; }

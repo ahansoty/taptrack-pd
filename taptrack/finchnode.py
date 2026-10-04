@@ -104,6 +104,8 @@ def summarize(record: dict) -> dict:
         "source": "finchnode", "mode": "public demo", "subject": None, "record_id": record.get("id"),
         "synthetic": record.get("synthetic", True),
         "name": (demo.get("name") or "").replace(" (synthetic)", ""), "age": age, "gender": demo.get("gender"),
+        "birth_date": birth, "source_name": demo.get("sourceName") or demo.get("source"),
+        "fhir_patient": demo.get("sourceRecordId"),
         "conditions": [c.get("name") for c in data.get("conditions", []) if c.get("name")],
         "allergies": [a.get("name") or a.get("substance") for a in data.get("allergies", []) if (a.get("name") or a.get("substance"))],
         "medications": [{"name": m.get("name"), "frequency": m.get("frequency"), "dosage": m.get("dosage")} for m in meds],
@@ -120,7 +122,8 @@ def load_patient(store) -> dict | None:
     try:
         record, subject, mode = fetch_record()
         p = summarize(record)
-        p.update(subject=subject, mode=mode)
+        p.update(subject=subject, mode=mode, record_id=p.get("record_id") or subject,
+                 api_host=httpx.URL(config.FINCHNODE_BASE_URL if mode.startswith("sandbox") else PUBLIC_DEMO).host)
         store.set_setting("patient", p)
         log.info("FinchNode record loaded: %s, %s meds, schedule from %s", p["name"], len(p["medications"]), p["schedule_source"])
         return p
