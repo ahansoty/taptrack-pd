@@ -120,3 +120,6 @@
   over the websocket in 58 s, score 81. Photon log confirms no new sends.
 - 04:30 Video QA: moved the "simulated" labels to the top so captions never cover them; phone subtitle now says it is
   a mockup. Narration text checked against the system (scores, times, message text copied from real output).
+- 04:55 All checks green (pytest 51/51, UI audit clean, e2e with a Good check). Fast-forward merged
+  `overnight-polish` into main (d6b19b4) and pushed both. taptrack.tech returns 200 with the agent section. Videos are
+  not in git (too large); they are at the project root.
