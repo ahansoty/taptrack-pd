@@ -1,0 +1,11 @@
+freewili
+result
+numpy
+scipy
+fastapi
+uvicorn[standard]
+python-dotenv
+psycopg[binary]
+httpx
+google-genai
+elevenlabs

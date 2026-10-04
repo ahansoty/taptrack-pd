@@ -1,0 +1,8 @@
+enable Ok('Ok')
+  pressed gray raw 1 0 0 0 0
+  pressed yellow raw 0 1 0 0 0
+  pressed green raw 0 0 1 0 0
+  pressed blue raw 0 0 0 1 0
+  pressed red raw 0 0 0 0 1
+sequence: ['gray', 'yellow', 'green', 'blue', 'red']
+seen: ['blue', 'gray', 'green', 'red', 'yellow'] missing: []
