@@ -69,7 +69,7 @@ DEFAULT_THEME = "clinical"  # chosen 2026-10-03 (A Clinical)
 
 # 8.3 names on the device
 SCREENS = ["home_n", "home_g", "home_y", "home_r", "home_due", "home_med",
-           "ready", "flip", "tremor", "taps", "voice", "res_g", "res_y", "res_r"]
+           "ready", "flip", "tremor", "taps", "voice", "calc", "res_g", "res_y", "res_r"]
 
 
 def svg(body: str, title: str) -> str:
@@ -217,6 +217,12 @@ def ready():
     return svg(topbar("TapTrack PD") + body + legend({"gray": "STOP", "blue": "START"}), "ready")
 
 
+def calculating():
+    dots = "".join(f'<rect x="{16 + i * 22}" y="150" width="14" height="14" rx="{RADIUS // 3}" fill="{ORANGE if i < 3 else RULE}"/>' for i in range(4))
+    return svg(topbar("TapTrack PD", "Check complete") + serif(16, 92, "Calculating", 52)
+               + text(16, 124, "Your score is on its way.", 17, 400, BROWN_2, "start") + dots, "calc")
+
+
 def result(name, color, word, foot):
     return svg(topbar("TapTrack PD", "Check complete") + status_block(62, color, "Result", word, "")
                + f'<rect x="14" y="200" width="{W - 28}" height="1" fill="{RULE}"/>'
@@ -230,6 +236,7 @@ def build_svgs() -> dict[str, str]:
     out["tremor"] = instruction("tremor", 2, "Hold still", "", "Rest your arm. Keep the wrist calm.", art_tremor())
     out["taps"] = instruction("taps", 3, "Tap yellow,", "then green", "Alternate, as fast as you can.", art_taps())
     out["voice"] = instruction("voice", 4, "Say “ahhh”", "", "One steady breath, clear and loud.", art_voice())
+    out["calc"] = calculating()
     out["res_g"] = result("res_g", GOOD, "Good", "Your score was spoken aloud.")
     out["res_y"] = result("res_y", FAIR, "Lower than usual", "Your score was spoken aloud.")
     out["res_r"] = result("res_r", LOW, "Much lower", "Score spoken. Care team notified.")

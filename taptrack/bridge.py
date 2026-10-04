@@ -360,7 +360,8 @@ class Bridge(threading.Thread):
                         raise Cancelled()
                     if c == "red":
                         self._log_dose("button")
-            taps = [(t - t_start, c) for t, c in list(dev.presses) if t >= t_start and c in ("yellow", "green")]
+            taps = [(t - t_start, c) for t, c in list(dev.presses) if t >= t_start - 0.3 and c in ("yellow", "green")]
+            self._dump_raw(name, presses=[(t, c) for t, c in list(dev.presses) if t >= t_start - 0.3])
             result = metrics.alternating_taps(taps, seconds)
         else:
             self._wait(seconds, progress=True)
@@ -369,6 +370,7 @@ class Bridge(threading.Thread):
                 result = metrics.voice(dev.audio, config.MIC_RATE_HZ)
             else:
                 rows = [r for r in list(dev.accel) if r[0] >= t_start]
+                self._dump_raw(name, rows=rows)
                 t, xyz = accel_arrays(rows)
                 result = metrics.hand_flip(t, xyz) if name == "flip" else metrics.tremor(t, xyz)
                 if len(t) > 1 and metrics.measured_rate(t) < NOT_WORN_HZ:
@@ -377,6 +379,19 @@ class Bridge(threading.Thread):
         if isinstance(dev, SimDevice):
             dev.mode = "rest"
         return result
+
+    def _dump_raw(self, step, rows=None, presses=None):
+        """Keep the raw samples of the latest real check for debugging (data/raw/<step>.json)."""
+        if isinstance(self.device, SimDevice):
+            return
+        try:
+            import json
+
+            d = config.DATA_DIR / "raw"
+            d.mkdir(exist_ok=True)
+            (d / f"{step}.json").write_text(json.dumps({"rows": rows or [], "presses": presses or []}))
+        except Exception:
+            log.exception("raw dump failed")
 
     def run_check(self, simulate: bool = False, state: float | None = None):
         if self.state == "check":
@@ -423,6 +438,7 @@ class Bridge(threading.Thread):
                 results[name] = r
                 self.publish({"type": "step", "step": name, "phase": "done", "result": r})
             complete = True
+            dev.screen("calc", "Calculating\nyour score")
         except Cancelled:
             complete = False
             dev.leds((0, 0, 0))

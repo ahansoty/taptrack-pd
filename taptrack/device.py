@@ -107,7 +107,22 @@ def accel_arrays(rows):
             if 0.7 < span_d / span_h < 1.4 and np.all(np.diff(dev) >= 0):
                 t = (dev - dev[0]) / scale + host[0]
                 break
-    return t, a[:, 2:5]
+    return regularize(t), a[:, 2:5]
+
+
+def regularize(t, min_rate=40.0, max_cv=0.5):
+    """USB delivers events in bursts, so arrival times cluster. When the stream is clearly continuous
+    (>= 40 Hz overall, i.e. worn and moving) but the spacing is bursty, the device sampled on a fixed
+    interval: spread the samples evenly over the span. Bursty timing otherwise injects a fake rhythm
+    at the burst rate into tremor and flip signals. Slow (motion-gated) streams are left alone."""
+    t = np.asarray(t, dtype=float)
+    if len(t) < 20 or t[-1] <= t[0]:
+        return t
+    dt = np.diff(t)
+    rate = (len(t) - 1) / (t[-1] - t[0])
+    if rate >= min_rate and dt.mean() > 0 and dt.std() / dt.mean() > max_cv:
+        return np.linspace(t[0], t[-1], len(t))
+    return t
 
 
 class FreeWiliDevice(BaseDevice):
@@ -119,6 +134,7 @@ class FreeWiliDevice(BaseDevice):
         self._accel_on = False
         self._audio_on = False
         self._lock = threading.RLock()
+        self._btn_offset = None   # host - device clock, min over presses (latency floor)
 
     def _call(self, label, fn, *args) -> bool:
         if not self.connected or self.dev is None:
@@ -181,14 +197,26 @@ class FreeWiliDevice(BaseDevice):
             k = config.COUNTS_PER_G * (data.g / 2.0 if data.g else 1.0)
             self.accel.append((now, float(getattr(frame, "timestamp", 0) or 0), data.x / k, data.y / k, data.z / k))
         elif event_type == EventType.Button and isinstance(data, ButtonData):
+            t = self._button_time(now, getattr(frame, "timestamp", 0))
             for c in COLORS:
                 v = bool(getattr(data, c))
                 if v and not self._buttons.get(c):
-                    self._press(c, now)
+                    self._press(c, t)
                 self._buttons[c] = v
         elif event_type == EventType.Audio and isinstance(data, AudioData):
             if self._audio_on:
                 self.audio.extend(data.data)
+
+    def _button_time(self, host_now: float, dev_raw) -> float:
+        """Press time on the host clock from the device timestamp (us on fw v54). Arrival times are
+        bursty over USB, which would make tap rhythm look irregular; device stamps are not."""
+        if not dev_raw:
+            return host_now
+        dev = float(dev_raw) / 1e6
+        off = host_now - dev
+        if self._btn_offset is None or off < self._btn_offset or off - self._btn_offset > 5:
+            self._btn_offset = off   # re-anchor if the device clock jumped
+        return dev + self._btn_offset
 
     def pump(self, seconds: float = 0.02):
         end = time.perf_counter() + seconds

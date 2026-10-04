@@ -17,3 +17,4 @@ data/start.log
 data/.env*
 data/*.json
 data/video/
+data/raw/
