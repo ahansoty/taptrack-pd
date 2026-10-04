@@ -128,11 +128,26 @@ function agentFeed(actions) {
   $("agent-feed").innerHTML = actions.map((a) => `<li><time>${TT.fmtTime(a.ts)}</time><span><strong>${TT.esc(a.kind.replace(/_/g, " "))}</strong> · ${TT.esc(a.detail.text || a.detail.summary || JSON.stringify(a.detail))}</span></li>`).join("");
 }
 
+function renderRecord(rec, outbox) {
+  if (!rec) { $("record-sub").textContent = "FinchNode record not loaded (offline or disabled). Using the TapTrack schedule."; return; }
+  $("record-src").textContent = `FinchNode ${rec.mode} · ${rec.subject}`;
+  $("record-sub").textContent = `${rec.name || "Patient"}${rec.age ? `, ${rec.age} y` : ""}${rec.gender ? `, ${rec.gender}` : ""}. Levodopa schedule from ${rec.schedule_source}${rec.levodopa_order ? "" : " (no levodopa order in the record)"}.`;
+  const queued = outbox.filter((o) => o.kind === "fhir_observation").length;
+  const tiles = [
+    { label: "Conditions on record", value: rec.conditions.length, note: rec.conditions.slice(0, 4).join(", ") || "none" },
+    { label: "Active medications", value: rec.medications.length, note: rec.medications.slice(0, 3).map((m) => m.name.split(" ").slice(0, 2).join(" ")).join(", ") || "none" },
+    { label: "Dose times", value: rec.dose_times.length + "/day", note: rec.dose_times.join(", ") },
+    { label: "Write-back queue", value: queued, note: "FHIR Observations (FinchNode API is read-only)" },
+  ];
+  $("record").innerHTML = tiles.map((t) => `<div class="tile"><div class="label">${t.label}</div><div class="value">${t.value}</div><div class="note">${TT.esc(t.note)}</div></div>`).join("");
+}
+
 async function loadAll() {
   const [status, summary, t, hm, latest, actions] = await Promise.all([
     TT.api("/api/status"), TT.api("/api/summary"), TT.api("/api/today"), TT.api("/api/heatmap"),
     TT.api("/api/checks/latest"), TT.api("/api/actions"),
   ]);
+  TT.api("/api/outbox?limit=200").then((o) => renderRecord(status.patient.record, o)).catch(() => renderRecord(status.patient.record, []));
   $("pname").textContent = status.patient.name;
   $("sched").textContent = `levodopa ${status.patient.dose_times.join(", ")}`;
   TT.deviceBadge($("device"), status.device);
@@ -185,6 +200,7 @@ function onEvent(e) {
     case "alert": feed(e.text); TT.toast(e.text); break;
     case "agent_action": TT.api("/api/actions").then(agentFeed); feed(`Agent: ${e.kind.replace(/_/g, " ")}`); break;
     case "report": showReport(e.report); break;
+    case "patient": refreshSoon(); break;
   }
 }
 let refreshTimer;
@@ -193,7 +209,8 @@ function refreshSoon() { clearTimeout(refreshTimer); refreshTimer = setTimeout((
 function showReport(r) {
   $("rep-neuro").innerHTML = TT.md(r.neurologist_report);
   $("rep-patient").innerHTML = TT.md(r.patient_summary);
-  $("report-sub").textContent = `Generated ${TT.fmtTime(r.generated_at)} by ${r.engine}. Patterns only, no medication advice.`;
+  $("report-sub").textContent = `Generated ${TT.fmtTime(r.generated_at)} by ${r.engine}. Patterns only, no medication advice.` +
+    (r.advice_sentences_removed ? ` ${r.advice_sentences_removed} sentence(s) removed by the no-dose-advice guard.` : "");
 }
 
 $("btn-check").onclick = async (ev) => {

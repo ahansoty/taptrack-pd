@@ -1,0 +1,3 @@
+typing_extensions>=4.13  # google-genai needs it; freewili pins 4.12.2 but works with newer (installed separately in start.sh)
+pytest
+playwright

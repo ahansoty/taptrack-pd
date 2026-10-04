@@ -15,7 +15,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from . import analysis, config, synth
+from . import analysis, config, report, synth
 from .bridge import Bridge
 from .storage import get_store
 
@@ -51,7 +51,9 @@ state: dict = {}
 
 
 def _ensure_seed(store):
-    """Seed 14 days of synthetic data if storage has none (or it's stale)."""
+    """Seed 14 days of synthetic data if storage has none (or it's stale). Demo-replay rows from a
+    previous session are cleared so they don't skew the 14-day pattern."""
+    store.clear_source("demo")
     latest = store.checks(time.time() - 2 * 86400, source="synthetic")
     if not latest and config.env("AUTO_SEED", "true").lower() != "false":
         stats = synth.load_into(store)
@@ -106,7 +108,7 @@ def status():
     return {"features": config.features(), "storage": store().kind,
             "device": b.status() if b else {"state": "off"},
             "patient": {"id": config.PATIENT_ID, "name": config.PATIENT_NAME, "dose_times": config.DOSE_TIMES,
-                        **(state.get("patient") or {})},
+                        "record": store().get_setting("patient")},
             "baseline_set": store().get_setting("baseline") is not None}
 
 
@@ -220,6 +222,23 @@ def add_action(a: ActionIn):
     store().add_action(a.kind, a.detail)
     hub.publish({"type": "agent_action", "kind": a.kind, "detail": a.detail})
     return {"ok": True}
+
+
+@app.post("/api/report")
+def make_report():
+    r = report.generate(store())
+    hub.publish({"type": "report", "report": {k: v for k, v in r.items() if k != "facts"}})
+    return r
+
+
+@app.get("/api/report/latest")
+def latest_report():
+    return store().get_setting("latest_report") or {}
+
+
+@app.get("/api/patient")
+def patient():
+    return store().get_setting("patient") or {}
 
 
 @app.get("/api/events")

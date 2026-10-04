@@ -34,9 +34,17 @@
   set, Windows SAPI voice otherwise. Played on the wrist during the check; laptop playback fallback.
   play_audio_file returned Ok at 8, 16 and 22.05 kHz; audible check pending (QUIET=true in the library).
 
+- Phase 6: FinchNode + reports. FinchNode public demo API (no key) loads the patient record
+  (default `patient-demo-polypharmacy`, 78 y, 14 active meds) on startup; a levodopa order would set the
+  dose times, but no demo patient has one, so the schedule falls back to config and says so. FinchNode is
+  read-only (POST returns 404), so every check becomes a FHIR R4 Observation in the local outbox
+  ("write-back queue") instead of pretending to write. "Generate visit report" -> neurologist report +
+  patient summary: Gemini when GEMINI_API_KEY is set, deterministic template otherwise; a guard strips any
+  sentence that reads as medication advice (tested).
+
 ## Disabled (missing keys)
 - Tiger Data (DATABASE_URL) -> SQLite fallback
-- Gemini (GEMINI_API_KEY) -> template report
+- Gemini (GEMINI_API_KEY) -> template report (same facts, same no-dose-advice guard)
 - ElevenLabs (ELEVENLABS_API_KEY) -> on-device number speech + laptop TTS fallback
 - Agentverse (AGENTVERSE_API_KEY) -> mailbox registration via Inspector link
 

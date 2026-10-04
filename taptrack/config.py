@@ -52,7 +52,7 @@ CHECK_TIMES = [t.strip() for t in env(
 
 FINCHNODE_BASE_URL = env("FINCHNODE_BASE_URL", "https://api.finchnode.com/demo/v1")
 FINCHNODE_API_KEY = env("FINCHNODE_API_KEY")
-FINCHNODE_PATIENT_ID = env("FINCHNODE_PATIENT_ID", "patient-demo-001")
+FINCHNODE_PATIENT_ID = env("FINCHNODE_PATIENT_ID", "patient-demo-polypharmacy")
 FINCHNODE_ENABLED = _flag("FINCHNODE_ENABLED", True)
 
 GEMINI_API_KEY = env("GEMINI_API_KEY")
