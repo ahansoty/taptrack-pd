@@ -48,9 +48,12 @@ a { color: var(--accent-ink); }
 
 /* top bar = wrist top bar: teal dot + TAPTRACK PD, right-side labels, hairline rule */
 header.top {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px;
-  padding: 14px clamp(16px, 4vw, 40px); background: var(--page); border-bottom: 1px solid var(--rule);
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; min-height: 60px;
+  padding: 10px clamp(16px, 4vw, 40px); background: var(--page); border-bottom: 1px solid var(--rule);
 }
+header.top .who { padding-left: 18px; border-left: 1px solid var(--rule); }
+header.top nav.views { margin-left: 0; }
+.avatar { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--panel); color: var(--ink); font-size: .78rem; font-weight: 700; margin-left: 8px; }
 .brand { display: flex; align-items: center; gap: 10px; font-size: .8rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--ink); }
 .brand::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--accent); }
 .brand svg { display: none; }
@@ -195,3 +198,15 @@ footer.foot strong { color: var(--ink); font-weight: 600; display: block; margin
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 nav.views { flex-wrap: wrap; }
 @media (max-width: 700px) { .me { display: none; } header.top { gap: 8px 14px; } .who { font-size: .82rem; } }
+
+/* report reads as a document in a scroll box instead of a full-page wall of text */
+.report { max-height: 460px; overflow: auto; padding-right: 8px; font-size: .9rem; line-height: 1.5; }
+.report h1, .report h3 { font-size: .95rem; margin: 14px 0 4px; }
+.report ul { padding-left: 18px; margin: 4px 0; }
+.report li { margin: 2px 0; }
+.empty-note { position: absolute; inset: 40% 0 auto 0; text-align: center; color: var(--muted); font-size: .9rem; margin: 0; }
+.card .sub { font-size: .85rem; color: var(--muted); }
+.who { font-size: .85rem; }
+.stack { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+#record .tile .value { font-size: 1.4rem; }
+#record.tiles { grid-template-columns: repeat(2, 1fr); }

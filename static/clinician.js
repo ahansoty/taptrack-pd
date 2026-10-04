@@ -19,19 +19,19 @@ function renderLatest(c) {
   $("latest-score").textContent = Math.round(c.score);
   TT.statusClass($("latest-card"), c.level || TT.levelOf(c.score));
   $("latest-level").innerHTML = TT.levelHTML(c.level || TT.levelOf(c.score));
-  const src = c.source === "synthetic" ? " (synthetic history)" : c.source === "demo" ? " (demo replay)" : " (wrist)";
-  $("latest-when").textContent = `${TT.fmtDay(c.ts)}, ${TT.fmtTime(c.ts)}${src}`;
-  $("latest-dose").textContent = `Time since last dose: ${TT.fmtMins(c.minutes_since_dose)}`;
+  const src = c.source === "synthetic" ? "history" : c.source === "demo" ? "simulated" : "wrist";
+  $("latest-when").textContent = `${TT.fmtTime(c.ts)} · ${src}`;
+  $("latest-dose").textContent = c.minutes_since_dose == null ? "" : `${TT.fmtMins(c.minutes_since_dose)} after dose`;
 }
 
 function renderTiles(s) {
   const wo = s.wearing_off;
   const onset = wo.onset_minutes != null ? `~${(wo.onset_minutes / 60).toFixed(1)} h after dose` : "not seen";
   const tiles = [
-    { label: "Wearing-off pattern", value: wo.detected ? "Present" : "Not detected", note: wo.detected ? `Score falls from ${wo.peak_score} to ${wo.late_score} (−${wo.drop_points} pts)` : (wo.reason || "") },
-    { label: "Decline begins", value: wo.detected ? onset.replace(" after dose", "") : "—", note: "after each dose, 14-day average" },
-    { label: "Checks completed", value: s.n_checks, note: `${s.n_missed_checks} expected checks missed` },
-    { label: "Daily trend", value: `${s.trend.slope_per_day > 0 ? "+" : ""}${s.trend.slope_per_day}`, note: "score points per day (14-day fit)" },
+    { label: "Wearing-off", value: wo.detected ? "Present" : "Not seen", note: wo.detected ? `${wo.peak_score} → ${wo.late_score}` : "" },
+    { label: "Decline begins", value: wo.detected ? onset.replace(" after dose", "") : "—", note: "after dose" },
+    { label: "Checks", value: s.n_checks, note: `${s.n_missed_checks} missed` },
+    { label: "Trend", value: `${s.trend.slope_per_day > 0 ? "+" : ""}${s.trend.slope_per_day}`, note: "points / day" },
   ];
   $("tiles").innerHTML = tiles.map((t) => `<div class="tile"><div class="label">${t.label}</div><div class="value">${t.value}</div><div class="note">${TT.esc(t.note)}</div></div>`).join("");
 }
@@ -45,15 +45,21 @@ function renderToday() {
     x: hourOf(c.ts, ds), y: Math.round(c.score), c, live: c.source !== "synthetic",
   }));
   const now = (Date.now() / 1000 - ds) / 3600;
+  const xs = pts.map((p) => p.x).concat(t.doses.map((d) => hourOf(d.ts, ds)));
+  const x0 = Math.max(0, Math.min(6, Math.floor(Math.min(...xs, 6) - 0.5)));
+  const x1 = Math.min(24, Math.max(23, Math.ceil(Math.max(...xs, 23) + 0.5)));
+  const hourLabel = (h) => (h % 24 === 0 ? "12 AM" : h === 12 ? "12 PM" : h < 12 ? `${h} AM` : `${h - 12} PM`);
+  const step = x1 - x0 > 18 ? 3 : 2;
   TT.lineChart($("today-chart"), {
-    x: [6, 23], y: [0, 100], height: 300, band: [70, 100], bandLabel: "good",
+    x: [x0, x1], y: [0, 100], height: 280, band: [70, 100], bandLabel: "good",
     yTicks: [0, 25, 50, 75, 100],
-    xTicks: [6, 8, 10, 12, 14, 16, 18, 20, 22].map((h) => ({ v: h, label: h === 12 ? "12 PM" : h < 12 ? `${h} AM` : `${h - 12} PM` })),
-    doses: t.doses.map((d) => ({ x: hourOf(d.ts, ds), label: `Dose ${TT.fmtTime(d.ts)}` })).filter((d) => d.x >= 6 && d.x <= 23),
-    series: [{ points: pts, gap: 3, endLabel: (p) => (p.x > now - 1.5 ? `${p.y}` : "") }],
+    xTicks: Array.from({ length: Math.floor((x1 - x0) / step) + 1 }, (_, i) => x0 + i * step).map((h) => ({ v: h, label: hourLabel(h) })),
+    doses: t.doses.map((d) => ({ x: hourOf(d.ts, ds), label: TT.fmtTime(d.ts) })),
+    series: [{ points: pts, gap: 3 }],
     ariaLabel: `Today's composite scores with dose times`,
     tooltip: (p) => `<strong>${p.y}</strong> · ${TT.levelOf(p.y)}<br>${TT.fmtTime(p.c.ts)} · ${TT.fmtMins(p.c.minutes_since_dose)} after dose${p.live ? "<br>from the wrist" : ""}`,
   });
+  if (!pts.length) $("today-chart").insertAdjacentHTML("beforeend", '<p class="empty-note">No checks yet today.</p>');
   $("today-desc").textContent = `${pts.length} checks today. ` + pts.map((p) => `${TT.fmtTime(p.c.ts)}: ${p.y}`).join(", ");
   const rows = t.checks.map((c) => `<tr><td>${TT.fmtTime(c.ts)}</td><td>${c.score == null ? "—" : Math.round(c.score)}</td><td>${TT.fmtMins(c.minutes_since_dose)}</td><td>${c.source}</td></tr>`).join("");
   const missed = t.missed.map((m) => `<tr><td>${m.slot}</td><td>missed</td><td>—</td><td>—</td></tr>`).join("");
@@ -61,10 +67,11 @@ function renderToday() {
 }
 
 function renderCurve(curve) {
-  const pts = curve.map((c, i) => ({ x: BIN_HOURS[i], y: c.mean, c }));
-  const band = curve.map((c, i) => (c.mean != null && c.sd != null ? { x: BIN_HOURS[i], lo: Math.max(0, c.mean - c.sd), hi: Math.min(100, c.mean + c.sd) } : null)).filter(Boolean);
+  const MIN_N = 3; // a mean of 1-2 checks is noise; the table still lists every bin
+  const pts = curve.map((c, i) => ({ x: BIN_HOURS[i], y: c.n >= MIN_N ? c.mean : null, c }));
+  const band = curve.map((c, i) => (c.n >= MIN_N && c.sd != null ? { x: BIN_HOURS[i], lo: Math.max(0, c.mean - c.sd), hi: Math.min(100, c.mean + c.sd) } : null)).filter(Boolean);
   TT.lineChart($("curve-chart"), {
-    x: [0, 5], y: [0, 100], height: 260, yTicks: [0, 25, 50, 75, 100],
+    x: [0, 5], y: [0, 100], height: 240, yTicks: [0, 25, 50, 75, 100],
     xTicks: [0, 1, 2, 3, 4, 5].map((h) => ({ v: h, label: `${h} h` })), xLabel: "hours since dose",
     series: [{ points: pts, bandPts: band }],
     ariaLabel: "Mean score by hours since the last dose",
@@ -132,14 +139,15 @@ function agentFeed(actions) {
 
 function renderRecord(rec, outbox) {
   if (!rec) { $("record-sub").textContent = "FinchNode record not loaded (offline or disabled). Using the TapTrack schedule."; return; }
-  $("record-src").textContent = `FinchNode ${rec.mode} · ${rec.subject}`;
-  $("record-sub").textContent = `${rec.name || "Patient"}${rec.age ? `, ${rec.age} y` : ""}${rec.gender ? `, ${rec.gender}` : ""}. Levodopa schedule from ${rec.schedule_source}${rec.levodopa_order ? "" : " (no levodopa order in the record)"}.`;
+  $("record-src").className = "caps";
+  $("record-src").textContent = `FinchNode · ${rec.mode.startsWith("sandbox") ? "sandbox" : "demo record"}`;
+  $("record-sub").textContent = `${rec.name || "Patient"}${rec.age ? `, ${rec.age}` : ""}${rec.gender ? `, ${rec.gender}` : ""} · dose times from ${rec.levodopa_order ? "FinchNode order" : "TapTrack schedule"}`;
   const queued = outbox.filter((o) => o.kind === "fhir_observation").length;
   const tiles = [
-    { label: "Conditions on record", value: rec.conditions.length, note: rec.conditions.slice(0, 4).join(", ") || "none" },
-    { label: "Active medications", value: rec.medications.length, note: rec.medications.slice(0, 3).map((m) => m.name.split(" ").slice(0, 2).join(" ")).join(", ") || "none" },
-    { label: "Dose times", value: rec.dose_times.length + "/day", note: rec.dose_times.join(", ") },
-    { label: "Write-back queue", value: queued, note: "FHIR Observations (FinchNode API is read-only)" },
+    { label: "Conditions", value: rec.conditions.length, note: rec.conditions.slice(0, 2).join(", ") || "none" },
+    { label: "Medications", value: rec.medications.length, note: "active on record" },
+    { label: "Dose times", value: rec.dose_times.length + "/day", note: rec.dose_times.join(" · ") },
+    { label: "EHR queue", value: queued, note: "FHIR observations" },
   ];
   $("record").innerHTML = tiles.map((t) => `<div class="tile"><div class="label">${t.label}</div><div class="value">${t.value}</div><div class="note">${TT.esc(t.note)}</div></div>`).join("");
 }
@@ -157,7 +165,6 @@ async function loadAll() {
   ]);
   TT.api("/api/outbox?limit=200").then((o) => renderRecord(status.patient.record, o)).catch(() => renderRecord(status.patient.record, []));
   $("pname").textContent = status.patient.name;
-  $("sched").textContent = `levodopa ${status.patient.dose_times.join(", ")}`;
   TT.deviceBadge($("device"), status.device);
   const f = status.features;
   pill("agent-pill", f.agent, "Agent online", "Agent offline");
@@ -223,8 +230,8 @@ function refreshSoon() { clearTimeout(refreshTimer); refreshTimer = setTimeout((
 function showReport(r) {
   $("rep-neuro").innerHTML = TT.md(r.neurologist_report);
   $("rep-patient").innerHTML = TT.md(r.patient_summary);
-  $("report-sub").textContent = `Generated ${TT.fmtTime(r.generated_at)} by ${r.engine}. Patterns only, no medication advice.` +
-    (r.advice_sentences_removed ? ` ${r.advice_sentences_removed} sentence(s) removed by the no-dose-advice guard.` : "");
+  $("report-sub").textContent = `${TT.fmtTime(r.generated_at)} · ${r.engine.replace(/ \(.*\)/, "")} · patterns only` +
+    (r.advice_sentences_removed ? ` · ${r.advice_sentences_removed} advice sentence${r.advice_sentences_removed > 1 ? "s" : ""} removed` : "");
 }
 
 $("btn-check").onclick = async (ev) => {

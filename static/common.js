@@ -52,6 +52,12 @@ const TT = (() => {
     const sx = (v) => m.l + ((v - opts.x[0]) / (opts.x[1] - opts.x[0])) * (W - m.l - m.r);
     const sy = (v) => H - m.b - ((v - opts.y[0]) / (opts.y[1] - opts.y[0])) * (H - m.t - m.b);
     const svg = el("svg:svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": opts.ariaLabel || "chart" }, container);
+    const inX = (v) => v >= opts.x[0] && v <= opts.x[1];
+    const inY = (v) => v >= opts.y[0] && v <= opts.y[1];
+    const clipId = `clip${Math.random().toString(36).slice(2, 8)}`;
+    const defs = el("svg:defs", {}, svg);
+    const cp = el("svg:clipPath", { id: clipId }, defs);
+    el("svg:rect", { x: m.l, y: m.t - 8, width: W - m.l - m.r, height: H - m.t - m.b + 16 }, cp);
     if (opts.band) {
       el("svg:rect", { class: "band", x: m.l, width: W - m.l - m.r, y: sy(opts.band[1]), height: sy(opts.band[0]) - sy(opts.band[1]) }, svg);
       el("svg:text", { x: W - m.r - 4, y: sy(opts.band[1]) + 14, "text-anchor": "end", text: opts.bandLabel || "" }, svg);
@@ -67,19 +73,21 @@ const TT = (() => {
     for (const t of ticks) {
       el("svg:text", { x: sx(t.v), y: H - m.b + 20, "text-anchor": "middle", text: t.label }, svg);
     }
-    for (const d of opts.doses || []) {
+    for (const d of (opts.doses || []).filter((d) => inX(d.x))) {
       const g = el("svg:g", { class: "dose" }, svg);
       el("svg:line", { x1: sx(d.x), x2: sx(d.x), y1: m.t - 6, y2: H - m.b }, g);
       el("svg:path", { d: `M${sx(d.x) - 6},${m.t - 14} h12 l-6,8 z`, fill: "var(--dose)" }, g);
       if (!narrow) el("svg:text", { x: sx(d.x) + 9, y: m.t - 6, text: d.label || "Dose" }, g);
       el("svg:title", { text: d.label || "Dose" }, g);
     }
+    const plot = el("svg:g", { "clip-path": `url(#${clipId})` }, svg);
     for (const s of opts.series) {
-      const pts = s.points.filter((p) => p.y != null);
-      if (s.bandPts && s.bandPts.length) {
-        const up = s.bandPts.map((p) => `${sx(p.x)},${sy(p.hi)}`).join(" L");
-        const dn = s.bandPts.slice().reverse().map((p) => `${sx(p.x)},${sy(p.lo)}`).join(" L");
-        el("svg:path", { class: "area", d: `M${up} L${dn} Z` }, svg);
+      const pts = s.points.filter((p) => p.y != null && inX(p.x) && inY(p.y));
+      const band = (s.bandPts || []).filter((p) => inX(p.x));
+      if (band.length > 1) {
+        const up = band.map((p) => `${sx(p.x)},${sy(p.hi)}`).join(" L");
+        const dn = band.slice().reverse().map((p) => `${sx(p.x)},${sy(p.lo)}`).join(" L");
+        el("svg:path", { class: "area", d: `M${up} L${dn} Z` }, plot);
       }
       if (pts.length > 1) {
         // break the line across gaps (e.g. missed checks spanning > gap)
@@ -88,9 +96,9 @@ const TT = (() => {
           const brk = i === 0 || (s.gap && p.x - pts[i - 1].x > s.gap);
           d += `${brk ? "M" : "L"}${sx(p.x)},${sy(p.y)} `;
         });
-        el("svg:path", { class: `line ${s.cls || ""}`, d }, svg);
+        el("svg:path", { class: `line ${s.cls || ""}`, d }, plot);
       }
-      if (s.dots !== false) for (const p of pts) el("svg:circle", { class: `dotm ${p.live ? "live" : ""}`, cx: sx(p.x), cy: sy(p.y), r: p.live ? 6 : 4.5 }, svg);
+      if (s.dots !== false) for (const p of pts) el("svg:circle", { class: `dotm ${p.live ? "live" : ""}`, cx: sx(p.x), cy: sy(p.y), r: p.live ? 6 : 4.5 }, plot);
       if (s.endLabel && pts.length) {
         const p = pts[pts.length - 1];
         el("svg:text", { class: "label-strong", x: sx(p.x), y: sy(p.y) - 12, "text-anchor": "middle", text: s.endLabel(p) }, svg);
@@ -99,7 +107,7 @@ const TT = (() => {
     if (opts.xLabel) el("svg:text", { x: W - m.r, y: H - 2, "text-anchor": "end", text: opts.xLabel }, svg);
     // hover: nearest point across series
     const tip = el("div", { class: "tooltip", role: "presentation" }, container);
-    const all = opts.series.flatMap((s) => s.points.filter((p) => p.y != null));
+    const all = opts.series.flatMap((s) => s.points.filter((p) => p.y != null && inX(p.x) && inY(p.y)));
     const cross = el("svg:line", { class: "axis", y1: m.t, y2: H - m.b, opacity: 0 }, svg);
     const hit = el("svg:rect", { class: "hit", x: m.l, y: m.t, width: W - m.l - m.r, height: H - m.t - m.b }, svg);
     const move = (evt) => {
@@ -144,9 +152,9 @@ const TT = (() => {
 
   function deviceBadge(target, dev) {
     if (!dev) return;
-    let cls = "warn", text = "Wrist device offline";
-    if (dev.demo) { cls = "warn"; text = "Demo replay (simulated wrist)"; }
-    else if (dev.connected) { cls = "ok"; text = dev.state === "check" ? "Wrist check in progress" : "Wrist device connected"; }
+    let cls = "warn", text = "Wrist offline";
+    if (dev.demo) { cls = "warn"; text = "Demo wrist"; }
+    else if (dev.connected) { cls = "ok"; text = dev.state === "check" ? "Check running" : "Wrist connected"; }
     target.className = `pill ${cls}`;
     target.innerHTML = `<span class="dot" aria-hidden="true"></span>${text}`;
   }
@@ -172,7 +180,7 @@ const TT = (() => {
     const nav = document.querySelector("nav.views");
     if (nav) {
       if (me.role !== "clinician") nav.querySelectorAll('a[href="/"]').forEach((a) => a.remove());
-      el("span", { class: "me", text: `${me.email} · ${me.role}` }, nav);
+      el("span", { class: "avatar", text: (me.email || "?")[0].toUpperCase(), title: `${me.email} (${me.role})`, "aria-label": `Signed in as ${me.email}, ${me.role}` }, nav);
       const b = el("button", { class: "link", type: "button", text: "Sign out" }, nav);
       b.onclick = async () => { await post("/api/logout"); location.href = "/login"; };
     }
