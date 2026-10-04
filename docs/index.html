@@ -13,23 +13,27 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
+    /* Same visual language as the wrist screens (screens/design.py, theme "clinical"):
+       off-white ground, navy ink, teal accent, spaced-caps labels under a hairline rule,
+       soft panels with a colored status stripe, square button chips. */
     :root {
       color-scheme: light;
-      --page: #F4F6F9; --surface: #FFFFFF; --surface-2: #EEF2F7; --ink: #132238; --ink-2: #3E4C63; --muted: #5F6B80;
-      --border: #DCE2EA; --accent: #0F766E; --accent-ink: #0B5F58; --good: #1F7A4D; --fair: #B7791F; --low: #B42318;
-      --shadow: 0 1px 2px rgba(19,34,56,.05), 0 8px 24px rgba(19,34,56,.06);
+      --page: #F7F8FA; --panel: #EBEFF5; --surface: #FFFFFF; --ink: #132238; --ink-2: #3E4C63; --muted: #5F6B80;
+      --rule: #D5DBE5; --accent: #0F766E; --accent-ink: #0B5F58;
+      --good: #1F7A4D; --fair: #9A6400; --low: #B42318; --blue: #3A6EB5;
+      --b-gray: #948877; --b-yellow: #D4A21A; --b-green: #3E9461; --b-blue: #3A6EB5; --b-red: #B83A2E;
     }
     @media (prefers-color-scheme: dark) {
       :root:not([data-theme="light"]) {
         color-scheme: dark;
-        --page: #0E1522; --surface: #152033; --surface-2: #1C2A40; --ink: #EEF2F8; --ink-2: #C3CCDA; --muted: #94A0B4;
-        --border: #26354F; --accent: #2DB3A6; --accent-ink: #5FD0C4; --good: #3FB37A; --fair: #E0A43A; --low: #E5675C; --shadow: none;
+        --page: #0E1522; --panel: #1C2A40; --surface: #152033; --ink: #EEF2F8; --ink-2: #C3CCDA; --muted: #94A0B4;
+        --rule: #26354F; --accent: #2DB3A6; --accent-ink: #5FD0C4; --good: #3FB37A; --fair: #E0A43A; --low: #E5675C; --blue: #6FA8F5;
       }
     }
     :root[data-theme="dark"] {
       color-scheme: dark;
-      --page: #0E1522; --surface: #152033; --surface-2: #1C2A40; --ink: #EEF2F8; --ink-2: #C3CCDA; --muted: #94A0B4;
-      --border: #26354F; --accent: #2DB3A6; --accent-ink: #5FD0C4; --good: #3FB37A; --fair: #E0A43A; --low: #E5675C; --shadow: none;
+      --page: #0E1522; --panel: #1C2A40; --surface: #152033; --ink: #EEF2F8; --ink-2: #C3CCDA; --muted: #94A0B4;
+      --rule: #26354F; --accent: #2DB3A6; --accent-ink: #5FD0C4; --good: #3FB37A; --fair: #E0A43A; --low: #E5675C; --blue: #6FA8F5;
     }
     * { box-sizing: border-box; }
     html { font-size: 18px; scroll-behavior: smooth; }
@@ -37,64 +41,82 @@
     a { color: var(--accent-ink); }
     :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
     .wrap { max-width: 1120px; margin: 0 auto; padding: 0 16px; }
-    header.top { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); }
-    header.top .wrap { display: flex; align-items: center; gap: 16px; height: 60px; }
-    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--ink); text-decoration: none; }
-    .brand svg { width: 28px; height: 28px; }
-    nav { margin-left: auto; display: flex; gap: 4px; }
-    nav a { color: var(--ink-2); text-decoration: none; font-weight: 600; font-size: .9rem; padding: 8px 12px; border-radius: 8px; }
-    nav a:hover { background: var(--surface-2); }
-    .btn { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: .95rem; padding: 12px 20px; border-radius: 10px; text-decoration: none; border: 1px solid var(--border); color: var(--ink); background: var(--surface); }
+
+    /* caps label, like LAST CHECK / TEST 1 OF 4 on the wrist */
+    .caps { font-size: .72rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+    .kicker { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; }
+    .kicker::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+
+    /* top bar = wrist top bar: dot + TAPTRACK PD, right label, hairline rule */
+    header.top { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--page) 92%, transparent); backdrop-filter: blur(8px); }
+    header.top .wrap { display: flex; align-items: center; gap: 16px; height: 58px; border-bottom: 1px solid var(--rule); }
+    .brand { display: flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; font-size: .8rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+    .brand::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--accent); }
+    nav { margin-left: auto; display: flex; gap: 2px; }
+    nav a { color: var(--ink-2); text-decoration: none; font-size: .7rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; padding: 8px 12px; border-radius: 6px; }
+    nav a:hover { background: var(--panel); }
+
+    h1, h2, h3 { color: var(--ink); line-height: 1.1; }
+    h1 { font-size: clamp(2.2rem, 5.6vw, 3.7rem); margin: 0 0 18px; font-weight: 600; letter-spacing: -.03em; }
+    h2 { font-size: clamp(1.6rem, 3.6vw, 2.3rem); margin: 0 0 12px; font-weight: 600; letter-spacing: -.025em; }
+    h3 { font-size: 1.1rem; margin: 0 0 6px; font-weight: 600; letter-spacing: -.01em; }
+    .lede { font-size: 1.12rem; max-width: 36em; }
+
+    .btn { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: .92rem; padding: 12px 20px; border-radius: 8px; text-decoration: none; border: 1px solid var(--rule); color: var(--ink); background: var(--surface); }
     .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-    h1, h2, h3 { color: var(--ink); letter-spacing: -.02em; line-height: 1.15; }
-    h1 { font-size: clamp(2.1rem, 5.5vw, 3.6rem); margin: 0 0 18px; font-weight: 700; }
-    h2 { font-size: clamp(1.5rem, 3.5vw, 2.1rem); margin: 0 0 12px; }
-    h3 { font-size: 1.05rem; margin: 0 0 6px; }
-    .eyebrow { color: var(--accent-ink); font-weight: 700; font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; margin: 0 0 12px; }
-    .hero { padding: 72px 0 40px; display: grid; grid-template-columns: 1.05fr .95fr; gap: 48px; align-items: center; }
-    .lede { font-size: 1.15rem; color: var(--ink-2); max-width: 36em; }
     .actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 26px; }
-    .device { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .device img { width: 100%; height: auto; display: block; border-radius: 10px; border: 1px solid var(--border); box-shadow: var(--shadow); image-rendering: auto; background: #fff; }
-    .device figcaption { font-size: .78rem; color: var(--muted); margin-top: 4px; }
-    section { padding: 56px 0; }
-    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px; box-shadow: var(--shadow); }
-    .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-    .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
-    .step-n { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; background: var(--surface-2); color: var(--accent-ink); font-weight: 700; margin-bottom: 10px; }
-    .shot { margin-top: 24px; border-radius: 14px; overflow: hidden; border: 1px solid var(--border); box-shadow: var(--shadow); }
+
+    /* status panel = wrist status card: soft fill, rounded, colored left stripe */
+    .panel { position: relative; background: var(--panel); border-radius: 10px; padding: 20px 22px 20px 28px; overflow: hidden; }
+    .panel::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 6px; background: var(--stripe, var(--accent)); }
+    .panel.good { --stripe: var(--good); } .panel.fair { --stripe: var(--fair); } .panel.low { --stripe: var(--low); } .panel.blue { --stripe: var(--blue); }
+    .panel .caps { margin-bottom: 6px; display: block; }
+    .panel .big { font-size: 2.2rem; font-weight: 600; color: var(--ink); letter-spacing: -.03em; line-height: 1.1; }
+
+    /* button legend = wrist bottom row: hairline, caps labels over square chips */
+    .legend { display: grid; grid-template-columns: repeat(5, 1fr); border-top: 1px solid var(--rule); padding-top: 10px; margin-top: 14px; text-align: center; }
+    .legend span { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: .66rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); }
+    .legend i { width: 12px; height: 12px; display: block; }
+
+    .hero { padding: 64px 16px 36px; display: grid; grid-template-columns: 1.05fr .95fr; gap: 48px; align-items: center; }
+    .device { background: var(--surface); border-radius: 18px; padding: 14px; border: 1px solid var(--rule); }
+    .screens { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .screens img { width: 100%; height: auto; display: block; border-radius: 6px; border: 1px solid var(--rule); }
+    .screens figcaption { font-size: .66rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-top: 6px; }
+
+    section { padding: 52px 0; }
+    .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+    .step .top { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--rule); padding-bottom: 8px; margin-bottom: 12px; }
+    .step p { margin: 0; }
+    ul.rows { list-style: none; padding: 0; margin: 8px 0 0; }
+    ul.rows li { padding: 10px 0; border-top: 1px solid var(--rule); }
+    ul.rows li strong { color: var(--ink); }
+    .shot { margin-top: 22px; border-radius: 12px; overflow: hidden; border: 1px solid var(--rule); }
     .shot img { display: block; width: 100%; height: auto; }
-    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 18px; }
-    .stat .v { font-size: 2rem; font-weight: 700; color: var(--ink); letter-spacing: -.02em; }
-    .stat .l { color: var(--muted); font-size: .88rem; }
-    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-    .chip { background: var(--surface-2); border-radius: 999px; padding: 6px 12px; font-size: .85rem; font-weight: 600; color: var(--ink-2); }
-    .two { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: center; }
-    .msg { background: var(--surface-2); border-radius: 18px 18px 18px 6px; padding: 12px 16px; max-width: 30em; margin: 8px 0; color: var(--ink); font-size: .95rem; }
-    .msg.me { margin-left: auto; background: var(--accent); color: #fff; border-radius: 18px 18px 6px 18px; max-width: 14em; }
-    ul.clean { list-style: none; padding: 0; margin: 0; }
-    ul.clean li { padding: 10px 0; border-top: 1px solid var(--border); }
-    ul.clean li strong { color: var(--ink); }
-    footer { border-top: 1px solid var(--border); background: var(--surface); padding: 30px 0 40px; text-align: center; color: var(--muted); font-size: .9rem; }
-    footer strong { color: var(--ink); display: block; font-size: 1.05rem; margin-bottom: 6px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    .chip { background: var(--panel); border-radius: 6px; padding: 6px 10px; font-size: .68rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+    .two { display: grid; grid-template-columns: 1fr 1fr; gap: 36px; align-items: center; }
+    .msg { background: var(--panel); border-radius: 14px 14px 14px 4px; padding: 12px 16px; max-width: 30em; margin: 8px 0; color: var(--ink); font-size: .95rem; }
+    .msg.me { margin-left: auto; background: var(--accent); color: #fff; border-radius: 14px 14px 4px 14px; max-width: 14em; }
+    footer { padding: 26px 0 40px; text-align: center; color: var(--muted); font-size: .9rem; }
+    footer .wrap { border-top: 1px solid var(--rule); padding-top: 24px; }
+    footer strong { color: var(--ink); display: block; font-size: 1.05rem; margin-bottom: 6px; font-weight: 600; }
     @media (max-width: 900px) {
       .hero, .two { grid-template-columns: 1fr; gap: 28px; }
-      .grid3, .grid4, .stats { grid-template-columns: 1fr 1fr; }
+      .grid3, .grid4 { grid-template-columns: 1fr 1fr; }
       nav a.hide-sm { display: none; }
     }
-    @media (max-width: 560px) { .grid3, .grid4, .stats { grid-template-columns: 1fr; } html { font-size: 17px; } .hero { padding-top: 40px; } }
+    @media (max-width: 560px) { .grid3, .grid4 { grid-template-columns: 1fr; } html { font-size: 17px; } .hero { padding-top: 36px; } }
   </style>
 </head>
 <body>
 <header class="top">
   <div class="wrap">
-    <a class="brand" href="#top" aria-label="TapTrack PD home">
-      <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M6 17h5l3-7 4 13 3-6h5" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      TapTrack PD
-    </a>
+    <a class="brand" href="#top" aria-label="TapTrack PD home">TapTrack PD</a>
     <nav aria-label="Sections">
       <a class="hide-sm" href="#how">How it works</a>
-      <a class="hide-sm" href="#clinic">For clinicians</a>
+      <a class="hide-sm" href="#clinic">Clinicians</a>
       <a class="hide-sm" href="#agent">Care agent</a>
       <a href="https://github.com/ahansoty/taptrack-pd">GitHub</a>
     </nav>
@@ -104,7 +126,7 @@
 <main id="top">
   <div class="wrap hero">
     <div>
-      <p class="eyebrow">MHacks 2026 · Parkinson's disease</p>
+      <p class="kicker caps">MHacks 2026 · Parkinson's disease</p>
       <h1>Parkinson's changes hour by hour. Neurologists see it a few times a year.</h1>
       <p class="lede">TapTrack PD is a one-minute motor check on the wrist, done several times a day and tagged with the time since the last levodopa dose. It shows the neurologist the hours they're missing: when each dose kicks in and when it wears off.</p>
       <div class="actions">
@@ -113,39 +135,46 @@
       </div>
     </div>
     <div class="device" aria-label="Screens on the wrist device">
-      <figure style="margin:0"><img src="img/wrist_home_g.png" alt="Wrist home screen: Last check, Good, with button labels Back, Tap, Tap, Check, Meds" width="640" height="480"><figcaption>Home: last result in words</figcaption></figure>
-      <figure style="margin:0"><img src="img/wrist_flip.png" alt="Wrist test screen: Flip your hand, test 1 of 4" width="640" height="480"><figcaption>One instruction per screen</figcaption></figure>
-      <figure style="margin:0"><img src="img/wrist_taps.png" alt="Wrist test screen: Tap yellow, then green" width="640" height="480"><figcaption>Taps on the real buttons</figcaption></figure>
-      <figure style="margin:0"><img src="img/wrist_res_r.png" alt="Wrist result screen: Much lower, score spoken, care team notified" width="640" height="480"><figcaption>Score spoken aloud</figcaption></figure>
+      <div class="screens">
+        <figure style="margin:0"><img src="img/wrist_home_g.png" alt="Wrist home screen: Last check, Good" width="640" height="480"><figcaption>Home</figcaption></figure>
+        <figure style="margin:0"><img src="img/wrist_flip.png" alt="Wrist test screen: Flip your hand, test 1 of 4" width="640" height="480"><figcaption>Test 1 of 4</figcaption></figure>
+        <figure style="margin:0"><img src="img/wrist_taps.png" alt="Wrist test screen: Tap yellow, then green" width="640" height="480"><figcaption>Test 3 of 4</figcaption></figure>
+        <figure style="margin:0"><img src="img/wrist_res_r.png" alt="Wrist result screen: Much lower, care team notified" width="640" height="480"><figcaption>Result</figcaption></figure>
+      </div>
+      <div class="legend" aria-label="The five buttons on the device">
+        <span>Back<i style="background:var(--b-gray)"></i></span>
+        <span>Tap<i style="background:var(--b-yellow)"></i></span>
+        <span>Tap<i style="background:var(--b-green)"></i></span>
+        <span>Check<i style="background:var(--b-blue)"></i></span>
+        <span>Meds<i style="background:var(--b-red)"></i></span>
+      </div>
     </div>
   </div>
 
-  <section id="problem" style="padding-top:20px">
-    <div class="wrap">
-      <div class="stats">
-        <div class="card stat"><div class="v">4×/day</div><div class="l">typical levodopa dosing, and each dose wears off before the next</div></div>
-        <div class="card stat"><div class="v">~2-4 visits</div><div class="l">a year with the neurologist, adjusting timing from memory</div></div>
-        <div class="card stat"><div class="v">1 minute</div><div class="l">per TapTrack check: flips, tremor, taps, voice</div></div>
-      </div>
+  <section id="problem" style="padding-top:12px">
+    <div class="wrap grid3">
+      <div class="panel low"><span class="caps">The problem</span><div class="big">4× a day</div><p>Typical levodopa dosing. Each dose wears off before the next one.</p></div>
+      <div class="panel fair"><span class="caps">Today</span><div class="big">2-4 visits</div><p>A year with the neurologist, adjusting timing from memory.</p></div>
+      <div class="panel good"><span class="caps">TapTrack PD</span><div class="big">1 minute</div><p>Per check on the wrist: flips, tremor, taps, voice.</p></div>
     </div>
   </section>
 
   <section id="how">
     <div class="wrap">
-      <p class="eyebrow">How it works</p>
+      <p class="kicker caps">How it works</p>
       <h2>Wear it all day, dock at night, like a Holter monitor.</h2>
       <div class="grid4" style="margin-top:22px">
-        <div class="card"><div class="step-n">1</div><h3>Log the dose</h3><p>Press red when you take your medicine. Every later check knows how long it has been.</p></div>
-        <div class="card"><div class="step-n">2</div><h3>Do the check</h3><p>Press blue. The wrist speaks each step: hand flips, holding still, alternating taps, a steady "ahhh".</p></div>
-        <div class="card"><div class="step-n">3</div><h3>Get a score</h3><p>A 0-100 score against your own baseline, spoken aloud, shown as Good, Lower than usual, or Much lower.</p></div>
-        <div class="card"><div class="step-n">4</div><h3>See the pattern</h3><p>Two weeks of checks become a dose-response curve the neurologist can read in seconds.</p></div>
+        <div class="panel step blue"><div class="top"><span class="caps">Step 1 of 4</span><span class="caps">Meds</span></div><h3>Log the dose</h3><p>Press red when you take your medicine. Every later check knows how long it has been.</p></div>
+        <div class="panel step"><div class="top"><span class="caps">Step 2 of 4</span><span class="caps">Check</span></div><h3>Do the check</h3><p>Press blue. The wrist speaks each step: hand flips, holding still, alternating taps, a steady "ahhh".</p></div>
+        <div class="panel step fair"><div class="top"><span class="caps">Step 3 of 4</span><span class="caps">Result</span></div><h3>Get a result</h3><p>Your score against your own baseline is spoken aloud. The screen shows Good, Lower than usual, or Much lower.</p></div>
+        <div class="panel step good"><div class="top"><span class="caps">Step 4 of 4</span><span class="caps">Pattern</span></div><h3>See the pattern</h3><p>Two weeks of checks become a dose-response curve the neurologist can read in seconds.</p></div>
       </div>
-      <div class="card" style="margin-top:16px">
-        <h3>What the wrist measures</h3>
-        <ul class="clean">
-          <li><strong>Hand flipping</strong>: flips per second, amplitude, and how much they shrink over 10 seconds (accelerometer).</li>
+      <div class="panel" style="margin-top:14px">
+        <span class="caps">What the wrist measures</span>
+        <ul class="rows">
+          <li><strong>Hand flipping</strong>: flips per second, amplitude, and how much they shrink over 10 seconds.</li>
           <li><strong>Tremor</strong>: strength while holding still, and its dominant frequency in the 3-12 Hz band.</li>
-          <li><strong>Alternating taps</strong>: tap rate, rhythm regularity and slowing on the device's own buttons.</li>
+          <li><strong>Alternating taps</strong>: tap rate, rhythm regularity and slowing, on the device's own buttons.</li>
           <li><strong>Voice</strong>: loudness and steadiness of a sustained "ahhh" from the built-in microphone.</li>
           <li><strong>Passive tremor</strong>: sampled between checks whenever the wrist is still.</li>
         </ul>
@@ -155,14 +184,14 @@
 
   <section id="clinic">
     <div class="wrap">
-      <p class="eyebrow">For clinicians</p>
+      <p class="kicker caps">For clinicians</p>
       <h2>Wearing-off, visible at a glance.</h2>
-      <p class="lede">Every result is tagged with time since dose. Scores peak 1 to 2.5 hours after a dose and fall about 45 points by 3 to 4 hours in this patient: the wearing-off window, measured instead of remembered. One click writes a visit report for the neurologist and a plain-language summary for the patient. It describes patterns only and never gives dose advice.</p>
+      <p class="lede">Every result is tagged with time since dose. In this synthetic patient, scores peak 1 to 2.5 hours after a dose and fall about 45 points by 3 to 4 hours: the wearing-off window, measured instead of remembered. One click writes a visit report for the neurologist and a plain-language summary for the patient. Patterns only, never dose advice.</p>
       <div class="shot"><img src="img/dashboard.jpg" alt="Clinician dashboard: latest check, 14-day pattern, today's scores with dose markers, dose-response curve and heatmap by hours since dose" width="1400" height="1180" loading="lazy"></div>
-      <div class="grid3" style="margin-top:16px">
-        <div class="card"><h3>Dose-response curve</h3><p>Mean score by hours since the last dose over 14 days, with spread.</p></div>
-        <div class="card"><h3>Heatmap by day</h3><p>Score by hours since dose for every day, so trends and outliers stand out.</p></div>
-        <div class="card"><h3>Live from the wrist</h3><p>Each test lands on the dashboard the moment it finishes.</p></div>
+      <div class="grid3" style="margin-top:14px">
+        <div class="panel"><span class="caps">14 days</span><h3>Dose-response curve</h3><p>Mean score by hours since the last dose, with spread.</p></div>
+        <div class="panel"><span class="caps">Per day</span><h3>Heatmap</h3><p>Score by hours since dose for every day, so trends and outliers stand out.</p></div>
+        <div class="panel"><span class="caps">Live</span><h3>From the wrist</h3><p>Each test lands on the dashboard the moment it finishes.</p></div>
       </div>
     </div>
   </section>
@@ -170,12 +199,12 @@
   <section id="agent">
     <div class="wrap two">
       <div>
-        <p class="eyebrow">Care agent</p>
+        <p class="kicker caps">Care agent</p>
         <h2>It acts on the pattern, not just shows it.</h2>
         <p>A Fetch.ai agent on Agentverse watches the data. When a check scores red it texts the caregiver over iMessage. When a scheduled check is missed it nudges the patient. When a wearing-off pattern appears it sends the visit report to the clinic's scheduling agent and requests a follow-up. Caregivers can text back to ask how the day is going, or ask the agent in ASI:One.</p>
         <div class="chips"><span class="chip">FREE-WILi</span><span class="chip">Fetch.ai</span><span class="chip">Photon iMessage</span><span class="chip">Gemini</span><span class="chip">ElevenLabs</span><span class="chip">Tiger Data</span><span class="chip">FinchNode</span><span class="chip">Figma</span></div>
       </div>
-      <div class="card" aria-label="Example iMessage conversation">
+      <div class="device" aria-label="Example iMessage conversation">
         <div class="msg">TapTrack alert: Harriet's 2:41 PM check was much lower than usual (score 38; usual is about 85). It was 3 h 10 min after the last dose. Reply 'today' for a summary.</div>
         <div class="msg me">today</div>
         <div class="msg">Today: 6 checks, average 52. Lowest was 38 at 2:41 PM, 3 h 10 min after the last dose. 3 doses logged, 1 check missed.</div>
@@ -186,9 +215,9 @@
 
   <section>
     <div class="wrap">
-      <div class="card" style="text-align:center">
-        <h2>Built in 36 hours at MHacks 2026</h2>
-        <p>One FREE-WILi on a watch strap, a FastAPI service, TimescaleDB, and two cooperating agents.</p>
+      <div class="panel good" style="text-align:center">
+        <span class="caps">Built at MHacks 2026</span>
+        <h2>One FREE-WILi on a watch strap, a FastAPI service, TimescaleDB, and two cooperating agents.</h2>
         <div class="actions" style="justify-content:center"><a class="btn primary" href="https://github.com/ahansoty/taptrack-pd">Read the code</a><a class="btn" href="https://github.com/ahansoty/taptrack-pd#3-minute-demo-script">Demo script</a></div>
       </div>
     </div>
