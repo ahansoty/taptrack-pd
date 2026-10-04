@@ -26,7 +26,7 @@ def benefit(hours_since_dose: float, day_frac: float = 0.0) -> float:
     if hours_since_dose is None or hours_since_dose < 0:
         return 0.0
     onset = 0.6 + 0.1 * day_frac          # hours to half effect (~36-42 min)
-    wear = 3.35 - 0.45 * day_frac          # hours to half wear-off (3.35 h -> 2.9 h)
+    wear = 3.35 - 0.25 * day_frac          # hours to half wear-off (3.35 h -> 3.1 h)
     rise = 1 / (1 + math.exp(-(hours_since_dose - onset) / 0.13))
     decay = 1 / (1 + math.exp((hours_since_dose - wear) / 0.28))
     return rise * decay
@@ -36,7 +36,7 @@ def state_at(ts: float, dose_ts: list[float], day_frac: float = 0.0) -> float:
     """Combined motor state from the last two doses (overlap near dose time)."""
     prior = [d for d in dose_ts if d <= ts][-2:]
     b = sum(benefit((ts - d) / 3600, day_frac) for d in prior)
-    level = 1.0 - 0.08 * day_frac         # slight downward trend in peak ON
+    level = 1.0 - 0.05 * day_frac         # slight downward trend in peak ON
     return float(min(1.0, b) * level)
 
 

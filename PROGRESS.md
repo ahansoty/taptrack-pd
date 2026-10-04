@@ -10,6 +10,11 @@
   Verified silently on the real device; found the accel stream is motion-gated (HARDWARE_NOTES.md).
 - QUIET=true in .env (library). Set QUIET=false for the demo.
 
+- Phase 3: synthetic data (`taptrack/synth.py`, `python scripts/seed.py`). 14 days, levodopa 8/12/16/20 with
+  +/-8 min jitter and one late dose, onset ~36 min, wear-off from ~3.2 h, noise, slight 14-day decline,
+  ~8% missed checks plus one missed afternoon. Mean score by time since dose: 0-30 min 28, 1-3 h ~82,
+  3-4 h 44. Auto-seeded on server start if no recent synthetic data.
+
 ## Disabled (missing keys)
 - Tiger Data (DATABASE_URL) -> SQLite fallback
 - Gemini (GEMINI_API_KEY) -> template report
