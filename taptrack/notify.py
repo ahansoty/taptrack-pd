@@ -72,11 +72,20 @@ def send(to: str, text: str, store=None, kind: str = "message", source: str = "s
     return r
 
 
+_health_cache: dict = {"at": 0.0, "value": None}
+
+
 def photon_health() -> dict:
+    """Cached for 15 s with a short timeout: on Windows a refused localhost connection takes ~3 s,
+    and every dashboard page load asks for this."""
+    if _health_cache["value"] is not None and time.time() - _health_cache["at"] < 15:
+        return _health_cache["value"]
     try:
-        return httpx.get(f"http://127.0.0.1:{config.env('PHOTON_PORT', '8790')}/health", timeout=3).json()
+        v = httpx.get(f"http://127.0.0.1:{config.env('PHOTON_PORT', '8790')}/health", timeout=0.6).json()
     except Exception:
-        return {"ok": False, "status": "sidecar not running"}
+        v = {"ok": False, "status": "sidecar not running"}
+    _health_cache.update(at=time.time(), value=v)
+    return v
 
 
 # ------------------------------------------------------------------ two-way chat

@@ -57,10 +57,10 @@ with sync_playwright() as p:
             pg.click("#tab-patient")
             if len(pg.inner_text("#rep-patient")) < 100:
                 problems.append("report: patient summary looks empty")
-            # test message (expected to report offline when Photon is off)
-            pg.click("#btn-test-msg")
-            pg.wait_for_timeout(3000)
-            print("test message status:", pg.inner_text("#msg-status"))
+            if "--live" in sys.argv:  # sends a real iMessage when Photon is running
+                pg.click("#btn-test-msg")
+                pg.wait_for_timeout(3000)
+                print("test message status:", pg.inner_text("#msg-status"))
             # record card
             if "finchnode" not in pg.inner_text("section.finch").lower():
                 problems.append("FinchNode label missing on patient record")

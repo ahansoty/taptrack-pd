@@ -8,13 +8,13 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/app.css?v=4">
+  <link rel="stylesheet" href="/static/app.css?v=7">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
 <header class="top">
   <div class="brand">TapTrack PD</div>
-  <div class="who"><strong id="pname">…</strong></div>
+  <div class="who"><strong id="pname">Loading…</strong></div>
   <span id="device" class="pill" role="status" aria-live="polite"><span class="dot" aria-hidden="true"></span>Connecting…</span>
   <span class="spacer"></span>
   <nav class="views" aria-label="Views">
@@ -38,7 +38,7 @@
     </section>
     <section class="card span-8" aria-labelledby="h-pattern">
       <h2 id="h-pattern">14-day pattern</h2>
-      <p class="sub">Score vs. personal baseline (85 = baseline)</p>
+      <p class="sub">Simulated history · score vs. personal baseline (85)</p>
       <div class="tiles" id="tiles"></div>
     </section>
 
@@ -125,8 +125,8 @@
 </main>
 <footer class="foot"><strong>Decision support for clinicians. Not a diagnostic device.</strong>
   <div class="muted" id="foot-meta"></div></footer>
-<script src="/static/common.js?v=4"></script>
+<script src="/static/common.js?v=7"></script>
 <script>TT.session();</script>
-<script src="/static/clinician.js?v=4"></script>
+<script src="/static/clinician.js?v=7"></script>
 </body>
 </html>

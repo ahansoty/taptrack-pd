@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/app.css?v=4">
+  <link rel="stylesheet" href="/static/app.css?v=7">
   <style>
     .status-big { font-size: 1.9rem; font-weight: 600; letter-spacing: -.02em; color: var(--ink); margin: 4px 0 8px; line-height: 1.15; }
     .missed li { display: flex; gap: 12px; padding: 10px 0; border-top: 1px solid var(--grid); }
@@ -20,7 +20,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="top">
   <div class="brand">TapTrack PD</div>
-  <div class="who"><strong id="pname">…</strong></div>
+  <div class="who"><strong id="pname">Loading…</strong></div>
   <span id="device" class="pill" role="status" aria-live="polite"><span class="dot" aria-hidden="true"></span>Connecting…</span>
   <span class="spacer"></span>
   <nav class="views" aria-label="Views">
@@ -61,8 +61,8 @@
   </div>
 </main>
 <footer class="foot"><strong>Decision support for clinicians. Not a diagnostic device.</strong>
-  <div class="muted">If you are worried about sudden changes, contact the care team. In an emergency call 911.</div></footer>
-<script src="/static/common.js?v=4"></script>
+  <div class="muted">Synthetic patient data for demonstration. If you are worried about sudden changes, contact the care team. In an emergency call 911.</div></footer>
+<script src="/static/common.js?v=7"></script>
 <script>
 const $ = (id) => document.getElementById(id);
 const describe = (lvl) => ({ good: "Moving well on the latest check.", fair: "Somewhat slower than usual on the latest check.", low: "Much slower than usual on the latest check.", none: "No check yet today." }[lvl]);
@@ -87,7 +87,7 @@ async function load() {
     ? cg.missed_today.map((m) => `<li><time>${TT.fmtTime(m.ts)}</time><span>Scheduled check not done</span></li>`).join("")
     : `<li><span>${TT.levelHTML("good")} No missed checks today.</span></li>`;
   $("missed-week").textContent = `${cg.missed_7d} missed in the last 7 days.`;
-  if (cg.actions.length) $("actions").innerHTML = cg.actions.map((a) => `<li><time>${TT.fmtTime(a.ts)}</time><span><strong>${TT.esc(a.kind.replace(/_/g, " "))}</strong> · ${TT.esc(a.detail.text || a.detail.summary || "")}</span></li>`).join("");
+  if (cg.actions.length) $("actions").innerHTML = cg.actions.map((a) => `<li><time>${TT.fmtTime(a.ts)}</time><span><strong>${TT.esc(a.kind.replace(/_/g, " "))}</strong> · ${TT.esc(TT.plurals(a.detail.text || a.detail.summary || ""))}</span></li>`).join("");
   const ds = t.start;
   TT.lineChart($("today-chart"), {
     x: [6, 23], y: [0, 100], height: 240, band: [70, 100], bandLabel: "good", yTicks: [0, 50, 100],

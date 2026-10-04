@@ -1,5 +1,7 @@
 // Clinician dashboard
 const $ = (id) => document.getElementById(id);
+const VIEW_DATE = /^\d{4}-\d{2}-\d{2}$/.test(new URLSearchParams(location.search).get("date") || "")
+  ? new URLSearchParams(location.search).get("date") : null;
 const STEP_NAMES = { flip: "Hand flips", tremor: "Tremor", taps: "Taps", voice: "Voice" };
 const TEST_ORDER = ["flip", "tremor", "taps", "voice"];
 const BIN_HOURS = [0.25, 0.75, 1.25, 1.75, 2.25, 2.75, 3.25, 3.75, 4.5];
@@ -41,6 +43,7 @@ function renderToday() {
   if (!t) return;
   const ds = t.start;
   $("today-date").textContent = TT.fmtDay(ds + 43200);
+  if (VIEW_DATE) $("h-today").textContent = "Day view";
   const pts = t.checks.filter((c) => c.score != null).map((c) => ({
     x: hourOf(c.ts, ds), y: Math.round(c.score), c, live: c.source !== "synthetic",
   }));
@@ -134,7 +137,7 @@ let activePhase = "", stepsDone = {};
 function agentFeed(actions) {
   if (!actions.length) return;
   const sent = (d) => (d.sent === true ? " · iMessage sent" : d.sent === false ? ` · not sent: ${d.error || "?"}` : "");
-  $("agent-feed").innerHTML = actions.map((a) => `<li><time>${TT.fmtTime(a.ts)}</time><span><strong>${TT.esc(a.kind.replace(/_/g, " "))}</strong> · ${TT.esc((a.detail.text || a.detail.summary || JSON.stringify(a.detail)) + sent(a.detail))}</span></li>`).join("");
+  $("agent-feed").innerHTML = actions.map((a) => `<li><time>${TT.fmtTime(a.ts)}</time><span><strong>${TT.esc(a.kind.replace(/_/g, " "))}</strong> · ${TT.esc(TT.plurals(a.detail.text || a.detail.summary || JSON.stringify(a.detail)) + sent(a.detail))}</span></li>`).join("");
 }
 
 function renderRecord(rec, outbox) {
@@ -164,7 +167,7 @@ function pill(id, ok, onText, offText) {
 
 async function loadAll() {
   const [status, summary, t, hm, latest, actions] = await Promise.all([
-    TT.api("/api/status"), TT.api("/api/summary"), TT.api("/api/today"), TT.api("/api/heatmap"),
+    TT.api("/api/status"), TT.api("/api/summary"), TT.api(VIEW_DATE ? `/api/today?date=${VIEW_DATE}` : "/api/today"), TT.api("/api/heatmap"),
     TT.api("/api/checks/latest"), TT.api("/api/actions"),
   ]);
   TT.api("/api/outbox?limit=200").then((o) => renderRecord(status.patient.record, o)).catch(() => renderRecord(status.patient.record, []));
@@ -174,7 +177,7 @@ async function loadAll() {
   const f = status.features;
   pill("agent-pill", f.agent, "Agent online", "Agent offline");
   pill("photon-pill", f.photon, "iMessage connected", "iMessage not configured");
-  $("foot-meta").textContent = `Storage: ${status.storage === "timescale" ? "TimescaleDB (Tiger Data)" : "local SQLite"} · Records: ${f.finchnode ? "FinchNode " + f.finchnode_mode : "local"} · Reports: ${f.gemini ? "Gemini" : "template"}${f.quiet ? " · audio muted" : ""}`;
+  $("foot-meta").textContent = "Synthetic patient: FinchNode demo record + simulated 14-day history. Wrist checks are real.";
   today = t;
   renderLatest(latest);
   renderLatestTests(latest);
@@ -210,13 +213,13 @@ function onEvent(e) {
       feed(`Check finished: score ${e.score}`);
       TT.toast(`New wrist check: ${e.score} (${e.level})`);
       renderLatest(e); renderLatestTests(e);
-      if (today) { today.checks.push(e); renderToday(); }
+      if (today && !VIEW_DATE) { today.checks.push(e); renderToday(); }
       refreshSoon();
       break;
     }
     case "dose":
       feed("Dose logged" + (e.source === "button" ? " (red button)" : ""), e.ts);
-      if (today) { today.doses.push({ ts: e.ts }); renderToday(); }
+      if (today && !VIEW_DATE) { today.doses.push({ ts: e.ts }); renderToday(); }
       break;
     case "passive": feed(`Passive tremor sample: ${e.rms_mg.toFixed(0)} mg`, e.ts); break;
     case "alert": feed(e.text); TT.toast(e.text); break;

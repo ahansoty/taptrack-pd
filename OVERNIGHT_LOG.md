@@ -20,3 +20,11 @@ _Morning summary goes here when the night is done._
 - 02:58 UI audit script (scripts/ui_audit.py): sign-in validation, both roles, role redirect, report, test message,
   FinchNode card, phone width. Only real finding: old activity-log entries saved before the plural fix still read
   "dose(s)"; left as-is (no deleting stored data); they scroll out as new activity arrives.
+- 03:05 Fixed: /api/status took 3.1 s (refused-connection probe to the iMessage service on Windows) -> cached with a
+  short timeout, now 0.25 s. This was why the caregiver page sat on "Loading..." for a few seconds.
+- 03:08 Verified the care agent answers chat-protocol messages routed through Agentverse (the ASI:One path) with real
+  data (agent/test_chat.py): "Today: 5 checks, average 60. Latest at 2:40 AM was much lower than usual (33)..."
+- 03:12 Labeled synthetic data on both dashboards; added `?date=YYYY-MM-DD` day view to the clinician page (used for the
+  video, since "today" is empty at night). Legacy "(s)" in old activity entries tidied on display only (no data edits).
+- 03:15 Found and fixed a stray backspace character inside a regex (escaping accident); added a test that fails if any
+  source file contains control characters. UI audit: no problems found.

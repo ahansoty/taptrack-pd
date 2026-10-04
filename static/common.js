@@ -19,6 +19,8 @@ const TT = (() => {
     return n;
   };
   const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  // display-only tidy for activity entries saved before plurals were fixed ("4 dose(s)" -> "4 doses")
+  const plurals = (t) => String(t ?? "").replace(/\b(\d+) (\w+)\(s\)/g, (_, n, w) => `${n} ${w}${n === "1" ? "" : "s"}`);
   const fmtTime = (ts) => new Date(ts * 1000).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
   const fmtDay = (ts) => new Date(ts * 1000).toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
   const fmtMins = (m) => (m == null ? "no dose logged" : m < 60 ? `${Math.round(m)} min` : `${Math.floor(m / 60)} h ${Math.round(m % 60)} min`);
@@ -192,5 +194,5 @@ const TT = (() => {
     if (["good", "fair", "low"].includes(level)) node.classList.add("status", level);
   }
 
-  return { api, post, el, esc, css, fmtTime, fmtDay, fmtMins, levelHTML, levelOf, toast, lineChart, scoreColor, live, deviceBadge, md, session, statusClass };
+  return { plurals, api, post, el, esc, css, fmtTime, fmtDay, fmtMins, levelHTML, levelOf, toast, lineChart, scoreColor, live, deviceBadge, md, session, statusClass };
 })();
