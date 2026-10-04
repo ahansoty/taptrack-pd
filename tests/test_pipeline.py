@@ -175,3 +175,24 @@ def test_idle_is_always_main_screen(store):
     for src, lvl in (("synthetic", "low"), ("demo", "low"), ("device", "good")):
         store.add_check(now - 60, 50, lvl, {}, {}, {}, source=src)
         assert b._desired_home() == "home_n"
+
+
+def test_result_shows_fast_even_if_database_fails(store):
+    """The wrist shows the result right after the last test, even when saving fails."""
+    import time as _t
+    dev = SimDevice(state=0.9, seed=5)
+    events = []
+    b = Bridge(store, events.append, device=dev, duration_scale=0.15, auto_advance=True)
+    dev.open()
+    b._attach(dev)
+
+    def boom(*a, **k):
+        raise RuntimeError("database unreachable")
+
+    store.add_check = boom
+    t0 = _t.time()
+    row = b.run_check()
+    assert row and row.get("save_error") and row["score"] is not None
+    assert b._home_override and b._home_override[0].startswith("res_")
+    assert b.state != "check"
+    assert any(e["type"] == "check_result" for e in events)

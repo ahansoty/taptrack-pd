@@ -36,11 +36,9 @@ class Storage:
             import psycopg
 
             self.pg = True
-            self.conn = psycopg.connect(self.url, autocommit=True)
             # own schema: never collide with other apps' tables in a shared database
             self.schema = config.env("DB_SCHEMA", "taptrack")
-            self.conn.execute(f'CREATE SCHEMA IF NOT EXISTS "{self.schema}"')
-            self.conn.execute(f'SET search_path TO "{self.schema}", public')
+            self._connect_pg()
             self.kind = "timescale"
         else:
             self.pg = False
@@ -51,6 +49,16 @@ class Storage:
             self.kind = "sqlite"
         self._init()
 
+    def _connect_pg(self):
+        import psycopg
+
+        # keepalives so idle connections survive NAT; serverless Postgres (Neon) still closes idle
+        # connections when its compute sleeps, which _exec handles by reconnecting
+        self.conn = psycopg.connect(self.url, autocommit=True, connect_timeout=10,
+                                    keepalives=1, keepalives_idle=30, keepalives_interval=10, keepalives_count=3)
+        self.conn.execute(f'CREATE SCHEMA IF NOT EXISTS "{self.schema}"')
+        self.conn.execute(f'SET search_path TO "{self.schema}", public')
+
     # ------------------------------------------------------------------ plumbing
     def _sql(self, q: str) -> str:
         if self.pg:
@@ -60,11 +68,24 @@ class Storage:
 
     def _exec(self, q: str, params=()):
         with self.lock:
-            cur = self.conn.cursor()
-            cur.execute(self._sql(q), params)
-            if not self.pg:
-                self.conn.commit()
-            return cur
+            for attempt in (1, 2):
+                try:
+                    cur = self.conn.cursor()
+                    cur.execute(self._sql(q), params)
+                    if not self.pg:
+                        self.conn.commit()
+                    return cur
+                except Exception as ex:
+                    import psycopg
+
+                    if not self.pg or attempt == 2 or not isinstance(ex, (psycopg.OperationalError, psycopg.InterfaceError)):
+                        raise
+                    log.warning("Postgres connection lost (%s); reconnecting", ex)
+                    try:
+                        self.conn.close()
+                    except Exception:
+                        pass
+                    self._connect_pg()
 
     def _rows(self, q: str, params=()) -> list[dict]:
         with self.lock:

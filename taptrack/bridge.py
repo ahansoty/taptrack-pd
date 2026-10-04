@@ -72,6 +72,7 @@ class Bridge(threading.Thread):
         self._last_reconnect = 0.0
         self.demo = False
         self._home_override = None   # (screen, until_ts)
+        self._baseline = None        # cached personal baseline (loaded once)
         self._last_home = 0.0
 
     # ------------------------------------------------------------ public API (any thread)
@@ -453,7 +454,12 @@ class Bridge(threading.Thread):
             self.publish({"type": "check_cancelled"})
         finally:
             self.step = None
-        row = self._finish(results, complete, source)
+        try:
+            row = self._finish(results, complete, source)
+        except Exception:
+            log.exception("finishing the check failed")
+            row = None
+            self._home_override = None
         if dev is not prev_dev:
             self.device = prev_dev
         self.state = prev_state if prev_state != "check" else "idle"
@@ -466,11 +472,15 @@ class Bridge(threading.Thread):
     def _finish(self, results, complete, source):
         if not results:
             return None
-        base = self.store.get_setting("baseline")
-        base = {k: tuple(v) for k, v in base.items()} if base else None
-        s = scoring.score(results, base)
-        row = self.store.add_check(time.time(), s["score"], s["level"], s["tests"], s["metrics"], results,
-                                   source=source, complete=complete)
+        t_done = time.time()
+        if self._baseline is None:
+            try:
+                b = self.store.get_setting("baseline")
+                self._baseline = {k: tuple(v) for k, v in b.items()} if b else {}
+            except Exception:
+                log.exception("baseline unavailable; using defaults")
+                self._baseline = {}
+        s = scoring.score(results, self._baseline or None)   # pure math, well under a second
         dev = self.device
         dev.leds(scoring.LED_RGB[s["level"]])
         if s["score"] is not None:
@@ -483,6 +493,16 @@ class Bridge(threading.Thread):
             if not dev.say_number(s["score"]) and not isinstance(dev, SimDevice):
                 audio.play_local(text=str(s["score"]))
             self._home_override = (RESULT_BY_LEVEL[s["level"]], time.time() + RESULT_HOLD_S)
+        # save after the patient already sees the result; a slow or sleeping database can't block the wrist
+        try:
+            row = self.store.add_check(t_done, s["score"], s["level"], s["tests"], s["metrics"], results,
+                                       source=source, complete=complete)
+        except Exception:
+            log.exception("saving the check failed; result shown on the wrist anyway")
+            row = {"ts": t_done, "score": s["score"], "level": s["level"], "tests": s["tests"], "metrics": s["metrics"],
+                   "results": results, "source": source, "complete": int(complete), "minutes_since_dose": None,
+                   "id": None, "save_error": True}
+            self.publish({"type": "alert", "text": "Check result could not be saved (database unreachable)"})
         self.publish({"type": "check_result", **row})
         for fn in self.listeners:
             try:
