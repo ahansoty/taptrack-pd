@@ -63,3 +63,8 @@ Requested interval vs real rate (device flat, 3 s windows):
 - Buttons left to right under the screen: gray, yellow, green, blue, red (on-screen legend matches).
 - Some `show_text_display` strings return `Invalid` (seen with underscores); screens are images now, text is
   only a fallback.
+
+## Audio playback rate (verified by ear, 2026-10-04)
+- `play_audio_file` plays at **8 kHz** regardless of the WAV header. 16/22/24/44 kHz files play slowed and
+  low-pitched ("demonic"). All prompts and beeps are generated at 8 kHz (`FW_WAV_RATE=8000`).
+- No volume API: files are scaled to `VOLUME` (0.55). The built-in number speech can't be scaled.

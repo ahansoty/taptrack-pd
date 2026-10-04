@@ -34,14 +34,14 @@ USE_DEVICE = _flag("USE_DEVICE", True)
 ACCEL_INTERVAL_MS = int(env("ACCEL_INTERVAL_MS", "5"))
 COUNTS_PER_G = float(env("COUNTS_PER_G", "16384"))
 MIC_RATE_HZ = float(env("MIC_RATE_HZ", "8000"))
-FW_WAV_RATE = int(env("FW_WAV_RATE", "16000"))
+FW_WAV_RATE = int(env("FW_WAV_RATE", "8000"))  # device plays at 8 kHz (verified by ear)
 # Speak instructions on the laptop when the device can't play them.
 LAPTOP_AUDIO = _flag("LAPTOP_AUDIO", True)
 # Mute every sound (wrist and laptop), e.g. in a library. Screen + LEDs still work.
 QUIET = _flag("QUIET")
 # The FREE-WILi has no volume API, so device audio files are scaled to this level (0-1).
 # The built-in spoken score number (play_audio_number_as_speech) can't be scaled.
-VOLUME = max(0.05, min(1.0, float(env("VOLUME", "0.35"))))
+VOLUME = max(0.05, min(1.0, float(env("VOLUME", "0.55"))))
 # Seconds between passive tremor samples while idle.
 PASSIVE_PERIOD_S = float(env("PASSIVE_PERIOD_S", "60"))
 
