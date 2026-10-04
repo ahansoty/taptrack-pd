@@ -17,6 +17,7 @@ function feed(text, ts = Date.now() / 1000) {
 function renderLatest(c) {
   if (!c || c.score == null) return;
   $("latest-score").textContent = Math.round(c.score);
+  TT.statusClass($("latest-card"), c.level || TT.levelOf(c.score));
   $("latest-level").innerHTML = TT.levelHTML(c.level || TT.levelOf(c.score));
   const src = c.source === "synthetic" ? " (synthetic history)" : c.source === "demo" ? " (demo replay)" : " (wrist)";
   $("latest-when").textContent = `${TT.fmtDay(c.ts)}, ${TT.fmtTime(c.ts)}${src}`;

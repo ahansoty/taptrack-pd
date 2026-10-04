@@ -165,5 +165,24 @@ const TT = (() => {
     return out + (list ? "</ul>" : "");
   }
 
-  return { api, post, el, esc, css, fmtTime, fmtDay, fmtMins, levelHTML, levelOf, toast, lineChart, scoreColor, live, deviceBadge, md };
+  // signed-in user in the header; caregivers don't get the clinician link
+  async function session() {
+    const me = await api("/api/me").catch(() => ({}));
+    if (!me.role) { location.href = "/login"; return me; }
+    const nav = document.querySelector("nav.views");
+    if (nav) {
+      if (me.role !== "clinician") nav.querySelectorAll('a[href="/"]').forEach((a) => a.remove());
+      el("span", { class: "me", text: `${me.email} · ${me.role}` }, nav);
+      const b = el("button", { class: "link", type: "button", text: "Sign out" }, nav);
+      b.onclick = async () => { await post("/api/logout"); location.href = "/login"; };
+    }
+    return me;
+  }
+
+  function statusClass(node, level) {
+    node.classList.remove("good", "fair", "low");
+    if (["good", "fair", "low"].includes(level)) node.classList.add("status", level);
+  }
+
+  return { api, post, el, esc, css, fmtTime, fmtDay, fmtMins, levelHTML, levelOf, toast, lineChart, scoreColor, live, deviceBadge, md, session, statusClass };
 })();

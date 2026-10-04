@@ -144,14 +144,34 @@ def test_dashboard_simulated_check_on_real_device_measures_all_tests(store):
     assert events[-1]["type"] == "device" and events[-1]["state"] != "check"
 
 
-def test_home_screen_ignores_simulated_and_synthetic_checks(store):
+def test_watch_flow_main_result_hold_and_dismiss(store, monkeypatch):
+    """Idle = main screen; after a check: calc -> result for 60 s; any button returns to main
+    without starting anything."""
+    import time as _t
+    events = []
+    dev = SimDevice(state=0.9, seed=3)
+    b = Bridge(store, events.append, device=dev, duration_scale=0.15, auto_advance=True)
+    dev.open()
+    b._attach(dev)
+    assert b._desired_home() == "home_n"
+    b.run_check()
+    shown = [l for l in dev.log if l.startswith("image:") or l.startswith("screen:")]
+    assert "calc" in " ".join(shown)
+    assert b._home_override and b._home_override[0].startswith("res_")
+    assert b._home_override[1] - _t.time() > 50          # held ~60 s
+    dev._press("blue")                                    # any button: dismiss only
+    b._tick()
+    assert b._home_override is None and b._desired_home() == "home_n"
+    assert len(store.checks(_t.time() - 300, source="demo")) == 1   # no second check started
+    b._home_override = ("res_g", _t.time() - 1)          # expiry -> main
+    assert b._desired_home() == "home_n"
+
+
+def test_idle_is_always_main_screen(store):
     import time as _t
     b = Bridge(store, lambda e: None)
     b.device = SimDevice()
     now = _t.time()
-    store.add_check(now - 600, 20, "low", {}, {}, {}, source="synthetic")
-    store.add_check(now - 300, 30, "low", {}, {}, {}, source="demo")  # dashboard-simulated
-    b.demo = False
-    assert b._desired_home() in ("home_n", "home_due")
-    store.add_check(now - 60, 90, "good", {}, {}, {}, source="device")
-    assert b._desired_home() in ("home_g", "home_due")
+    for src, lvl in (("synthetic", "low"), ("demo", "low"), ("device", "good")):
+        store.add_check(now - 60, 50, lvl, {}, {}, {}, source=src)
+        assert b._desired_home() == "home_n"

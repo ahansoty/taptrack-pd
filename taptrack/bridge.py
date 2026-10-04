@@ -39,6 +39,8 @@ HOME_TEXT = {  # text fallback when screens aren't uploaded
     "home_y": "TapTrack PD\nLast check:\nLOWER THAN USUAL", "home_r": "TapTrack PD\nLast check:\nMUCH LOWER",
     "home_due": "TapTrack PD\nCHECK DUE\npress blue", "home_med": "Dose logged",
 }
+RESULT_HOLD_S = float(config.env("RESULT_HOLD_S", "60"))  # result screen, then back to main
+DOSE_CONFIRM_S = 3.0
 LED_PROGRESS = (40, 40, 60)
 LED_COUNT = (0, 0, 90)
 
@@ -121,21 +123,25 @@ class Bridge(threading.Thread):
 
     # ------------------------------------------------------------ home screen
     def _desired_home(self) -> str:
-        now = time.time()
-        if self._home_override and now < self._home_override[1]:
+        """The main screen whenever idle. Only transient screens (a result for up to 60 s, a short
+        dose confirmation) override it, and any button press dismisses them."""
+        if self._home_override and time.time() < self._home_override[1]:
             return self._home_override[0]
-        day0 = analysis.day_start(now)
-        recent = self.store.checks(now - 6 * 3600)
-        for hhmm in config.CHECK_TIMES:
-            h, m = (int(x) for x in hhmm.split(":"))
-            slot = day0 + h * 3600 + m * 60
-            if slot <= now <= slot + 45 * 60 and not any(c["ts"] >= slot - 45 * 60 for c in recent):
-                return "home_due"
-        # only checks done on this wrist count (not synthetic history, not dashboard-simulated checks);
-        # in demo replay the simulated wrist is the wrist
-        mine = "demo" if self.demo else "device"
-        own = [c for c in recent if c["source"] == mine and c.get("level") in HOME_BY_LEVEL]
-        return HOME_BY_LEVEL[own[-1]["level"]] if own else "home_n"
+        if self._home_override:  # override just expired: back to main, LEDs off
+            self._home_override = None
+            if self.device:
+                self.device.leds((0, 0, 0))
+        return "home_n"
+
+    def _dismiss_overlay(self) -> bool:
+        """A press while a result/confirmation is showing only returns to the main screen."""
+        if self._home_override and time.time() < self._home_override[1]:
+            self._home_override = None
+            if self.device:
+                self.device.leds((0, 0, 0))
+            self._home(force=True)
+            return True
+        return False
 
     def _home(self, force=False):
         dev = self.device
@@ -242,6 +248,8 @@ class Bridge(threading.Thread):
         self._handle_commands()
         while not self.presses.empty():
             c = self.presses.get_nowait()
+            if self._dismiss_overlay():
+                continue
             if c == "red":
                 self._log_dose("button")
             elif c == "blue":
@@ -272,8 +280,8 @@ class Bridge(threading.Thread):
             if not dev.play("dose.wav"):
                 dev.play("go.wav") or audio.play_local("dose.wav", audio.PROMPTS["dose.wav"])
             if self.state != "check":
-                self._home_override = ("home_med", time.time() + 4)
-                self._home()
+                self._home_override = ("home_med", time.time() + DOSE_CONFIRM_S)
+                self._home(force=True)
         self.publish({"type": "dose", "ts": ts, "source": source})
 
     def _maybe_passive(self):
@@ -449,7 +457,9 @@ class Bridge(threading.Thread):
         if dev is not prev_dev:
             self.device = prev_dev
         self.state = prev_state if prev_state != "check" else "idle"
-        self._home(force=True)
+        if dev is not prev_dev:
+            self._home_override = None  # a simulated check never takes over the real wrist's screen
+        self._home(force=dev is not prev_dev or row is None)
         self.publish({"type": "device", **self.status()})
         return row
 
@@ -472,7 +482,7 @@ class Bridge(threading.Thread):
             self._wait(2.2 if not isinstance(dev, SimDevice) else 0.1)
             if not dev.say_number(s["score"]) and not isinstance(dev, SimDevice):
                 audio.play_local(text=str(s["score"]))
-            self._wait(4.0 if not isinstance(dev, SimDevice) else 0.1)
+            self._home_override = (RESULT_BY_LEVEL[s["level"]], time.time() + RESULT_HOLD_S)
         self.publish({"type": "check_result", **row})
         for fn in self.listeners:
             try:

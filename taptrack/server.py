@@ -5,13 +5,17 @@ Run: python -m taptrack.server   (or uvicorn taptrack.server:app)
 from __future__ import annotations
 
 import asyncio
+import base64
+import hashlib
+import hmac
 import json
+import secrets
 import logging
 import time
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -90,14 +94,89 @@ def store():
     return state["store"]
 
 
+# ------------------------------------------------------------------ sign-in (demo-grade: email + role, signed cookie)
+SESSION_COOKIE = "tt_session"
+ROLES = ("caregiver", "clinician")
+
+
+def _session_key() -> bytes:
+    k = config.env("SESSION_SECRET")
+    if k:
+        return k.encode()
+    f = config.DATA_DIR / ".session_key"
+    if not f.exists():
+        f.write_text(secrets.token_hex(32))
+    return f.read_text().strip().encode()
+
+
+def make_session(email: str, role: str) -> str:
+    body = base64.urlsafe_b64encode(json.dumps({"email": email, "role": role, "at": int(time.time())}).encode()).decode()
+    sig = hmac.new(_session_key(), body.encode(), hashlib.sha256).hexdigest()
+    return f"{body}.{sig}"
+
+
+def read_session(request: Request) -> dict | None:
+    raw = request.cookies.get(SESSION_COOKIE, "")
+    if "." not in raw:
+        return None
+    body, sig = raw.rsplit(".", 1)
+    if not hmac.compare_digest(sig, hmac.new(_session_key(), body.encode(), hashlib.sha256).hexdigest()):
+        return None
+    try:
+        s = json.loads(base64.urlsafe_b64decode(body.encode()))
+    except Exception:
+        return None
+    return s if s.get("role") in ROLES else None
+
+
+class LoginIn(BaseModel):
+    email: str
+    role: str
+
+
+@app.post("/api/login")
+def login(body: LoginIn):
+    email = body.email.strip().lower()
+    if "@" not in email or body.role not in ROLES:
+        raise HTTPException(400, "need an email and a role (caregiver or clinician)")
+    nxt = "/" if body.role == "clinician" else "/caregiver"
+    r = JSONResponse({"ok": True, "next": nxt, "role": body.role})
+    r.set_cookie(SESSION_COOKIE, make_session(email, body.role), httponly=True, samesite="lax", max_age=7 * 86400)
+    return r
+
+
+@app.post("/api/logout")
+def logout():
+    r = JSONResponse({"ok": True, "next": "/login"})
+    r.delete_cookie(SESSION_COOKIE)
+    return r
+
+
+@app.get("/api/me")
+def me(request: Request):
+    return read_session(request) or {}
+
+
 # ------------------------------------------------------------------ pages
+@app.get("/login")
+def login_page():
+    return FileResponse(STATIC / "login.html")
+
+
 @app.get("/")
-def clinician_page():
+def clinician_page(request: Request):
+    s = read_session(request)
+    if not s:
+        return RedirectResponse("/login", status_code=303)
+    if s["role"] != "clinician":
+        return RedirectResponse("/caregiver", status_code=303)
     return FileResponse(STATIC / "clinician.html")
 
 
 @app.get("/caregiver")
-def caregiver_page():
+def caregiver_page(request: Request):
+    if not read_session(request):
+        return RedirectResponse("/login", status_code=303)
     return FileResponse(STATIC / "caregiver.html")
 
 

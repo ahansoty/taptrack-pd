@@ -23,18 +23,6 @@
       --good: #1F7A4D; --fair: #9A6400; --low: #B42318; --blue: #3A6EB5;
       --b-gray: #948877; --b-yellow: #D4A21A; --b-green: #3E9461; --b-blue: #3A6EB5; --b-red: #B83A2E;
     }
-    @media (prefers-color-scheme: dark) {
-      :root:not([data-theme="light"]) {
-        color-scheme: dark;
-        --page: #0E1522; --panel: #1C2A40; --surface: #152033; --ink: #EEF2F8; --ink-2: #C3CCDA; --muted: #94A0B4;
-        --rule: #26354F; --accent: #2DB3A6; --accent-ink: #5FD0C4; --good: #3FB37A; --fair: #E0A43A; --low: #E5675C; --blue: #6FA8F5;
-      }
-    }
-    :root[data-theme="dark"] {
-      color-scheme: dark;
-      --page: #0E1522; --panel: #1C2A40; --surface: #152033; --ink: #EEF2F8; --ink-2: #C3CCDA; --muted: #94A0B4;
-      --rule: #26354F; --accent: #2DB3A6; --accent-ink: #5FD0C4; --good: #3FB37A; --fair: #E0A43A; --low: #E5675C; --blue: #6FA8F5;
-    }
     * { box-sizing: border-box; }
     html { font-size: 18px; scroll-behavior: smooth; }
     body { margin: 0; background: var(--page); color: var(--ink-2); font-family: Inter, "Segoe UI", system-ui, sans-serif; line-height: 1.6; -webkit-font-smoothing: antialiased; }
@@ -55,6 +43,7 @@
     nav { margin-left: auto; display: flex; gap: 2px; }
     nav a { color: var(--ink-2); text-decoration: none; font-size: .7rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; padding: 8px 12px; border-radius: 6px; }
     nav a:hover { background: var(--panel); }
+    nav a.signin { background: var(--accent); color: #fff; margin-left: 6px; }
 
     h1, h2, h3 { color: var(--ink); line-height: 1.1; }
     h1 { font-size: clamp(2.2rem, 5.6vw, 3.7rem); margin: 0 0 18px; font-weight: 600; letter-spacing: -.03em; }
@@ -119,6 +108,7 @@
       <a class="hide-sm" href="#clinic">Clinicians</a>
       <a class="hide-sm" href="#agent">Care agent</a>
       <a href="https://github.com/ahansoty/taptrack-pd">GitHub</a>
+      <a class="signin" href="http://127.0.0.1:8000/login">Sign in</a>
     </nav>
   </div>
 </header>
@@ -130,7 +120,8 @@
       <h1>Parkinson's changes hour by hour. Neurologists see it a few times a year.</h1>
       <p class="lede">TapTrack PD is a one-minute motor check on the wrist, done several times a day and tagged with the time since the last levodopa dose. It shows the neurologist the hours they're missing: when each dose kicks in and when it wears off.</p>
       <div class="actions">
-        <a class="btn primary" href="#clinic">See the dashboard</a>
+        <a class="btn primary" href="http://127.0.0.1:8000/login">Sign in to the app</a>
+        <a class="btn" href="#clinic">See the dashboard</a>
         <a class="btn" href="https://github.com/ahansoty/taptrack-pd">Source on GitHub</a>
       </div>
     </div>

@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TapTrack PD · Sign in</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='9' fill='%230F766E'/></svg>">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/app.css">
+  <style>
+    main.signin { max-width: 560px; padding-top: 48px; }
+    .signin h1 { font-size: 2.6rem; font-weight: 600; letter-spacing: -.03em; color: var(--ink); margin: 6px 0 6px; line-height: 1.05; }
+    .signin .sub { margin: 0 0 22px; }
+    .caps-label { display: block; margin: 18px 0 8px; padding: 0; }
+    fieldset legend.caps-label { margin-top: 22px; }
+    input[type=email] {
+      width: 100%; font: inherit; font-size: 1.05rem; padding: 14px 16px; border-radius: 10px;
+      border: 1px solid var(--rule); background: var(--surface); color: var(--ink); min-height: 52px;
+    }
+    .roles { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .role { position: relative; display: block; cursor: pointer; }
+    .role input { position: absolute; opacity: 0; }
+    .role .box {
+      position: relative; overflow: hidden; display: block; padding: 16px 16px 16px 24px; border-radius: 10px;
+      background: var(--panel); border: 2px solid transparent; min-height: 108px;
+    }
+    .role .box::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 6px; background: var(--rule); }
+    .role .word { display: block; font-size: 1.35rem; font-weight: 600; color: var(--ink); letter-spacing: -.02em; margin-top: 4px; }
+    .role .what { display: block; font-size: .85rem; color: var(--ink-2); margin-top: 4px; line-height: 1.4; }
+    .role input:checked + .box { border-color: var(--accent); }
+    .role input:checked + .box::before { background: var(--accent); }
+    .role input:focus-visible + .box { outline: 3px solid var(--focus); outline-offset: 2px; }
+    .signin button.primary { width: 100%; margin-top: 22px; min-height: 52px; font-size: 1rem; }
+    .err { color: var(--critical-ink); min-height: 1.4em; margin-top: 10px; font-weight: 600; }
+    .note { margin-top: 18px; }
+    @media (max-width: 480px) { .roles { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<header class="top"><div class="brand">TapTrack PD</div><span class="spacer"></span><span class="caps">Sign in</span></header>
+<main id="main" class="signin">
+  <span class="caps">Welcome</span>
+  <h1>Sign in</h1>
+  <p class="sub">Choose who you are. Caregivers see how the day is going; clinicians see the full dose-response picture.</p>
+  <form id="f" novalidate>
+    <label class="caps caps-label" for="email">Email</label>
+    <input id="email" name="email" type="email" autocomplete="email" placeholder="name@example.com" required>
+    <fieldset style="border:0;padding:0;margin:0">
+      <legend class="caps caps-label">I am a</legend>
+      <div class="roles">
+        <label class="role"><input type="radio" name="role" value="caregiver" checked>
+          <span class="box"><span class="caps">Family</span><span class="word">Caregiver</span><span class="what">Today's status, missed checks, messages.</span></span></label>
+        <label class="role"><input type="radio" name="role" value="clinician">
+          <span class="box"><span class="caps">Care team</span><span class="word">Clinician</span><span class="what">Dose-response curve, 14-day heatmap, visit report.</span></span></label>
+      </div>
+    </fieldset>
+    <button class="primary" type="submit">Continue</button>
+    <div class="err" id="err" role="alert"></div>
+  </form>
+  <p class="note muted">Demo sign-in: no password, synthetic patient data. Not for real patient information.</p>
+</main>
+<footer class="foot"><strong>Decision support for clinicians. Not a diagnostic device.</strong></footer>
+<script>
+document.getElementById("f").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const email = document.getElementById("email").value.trim();
+  const role = new FormData(e.target).get("role");
+  const err = document.getElementById("err");
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err.textContent = "Enter a valid email address."; return; }
+  const r = await fetch("/api/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, role }) });
+  if (!r.ok) { err.textContent = "Could not sign in. Try again."; return; }
+  location.href = (await r.json()).next;
+});
+</script>
+</body>
+</html>

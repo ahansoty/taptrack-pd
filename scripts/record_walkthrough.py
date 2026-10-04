@@ -29,6 +29,7 @@ with sync_playwright() as p:
     b = p.chromium.launch()
     ctx = b.new_context(viewport={"width": W, "height": H}, record_video_dir=str(out), record_video_size={"width": W, "height": H})
     pg = ctx.new_page()
+    pg.request.post(base + "/api/login", data={"email": "clinician@example.com", "role": "clinician"})
     pg.goto(base + "/")
     pg.wait_for_timeout(3500)                       # latest check + 14-day tiles
     y = lambda sel: pg.evaluate(f"document.querySelector('{sel}').getBoundingClientRect().top + window.scrollY - 24")

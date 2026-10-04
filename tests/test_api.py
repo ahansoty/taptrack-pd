@@ -19,10 +19,28 @@ def client(tmp_path_factory):
         yield c, server
 
 
-def test_pages_and_status(client):
+def test_signin_and_role_routing(client):
     c, _ = client
-    assert c.get("/").status_code == 200
+    c.cookies.clear()
+    r = c.get("/", follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"] == "/login"
+    assert c.get("/login").status_code == 200
+    assert c.post("/api/login", json={"email": "bad", "role": "clinician"}).status_code == 400
+    r = c.post("/api/login", json={"email": "Fam@Example.com", "role": "caregiver"})
+    assert r.json()["next"] == "/caregiver"
+    r = c.get("/", follow_redirects=False)      # caregivers can't open the clinician view
+    assert r.status_code == 303 and r.headers["location"] == "/caregiver"
     assert c.get("/caregiver").status_code == 200
+    assert c.get("/api/me").json()["email"] == "fam@example.com"
+    c.post("/api/login", json={"email": "dr@example.com", "role": "clinician"})
+    assert c.get("/").status_code == 200 and c.get("/caregiver").status_code == 200
+    c.cookies.set("tt_session", "forged.deadbeef")
+    assert c.get("/", follow_redirects=False).status_code == 303
+    c.post("/api/login", json={"email": "dr@example.com", "role": "clinician"})
+
+
+def test_status(client):
+    c, _ = client
     s = c.get("/api/status").json()
     assert s["storage"] == "sqlite" and s["baseline_set"]
 

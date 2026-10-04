@@ -14,6 +14,7 @@ with sync_playwright() as p:
     pg = b.new_page(viewport={"width": 1400, "height": 1000})
     steps = []
     pg.on("websocket", lambda ws: ws.on("framereceived", lambda f: steps.append(f) if '"step"' in str(f) else None))
+    pg.request.post(base + "/api/login", data={"email": "clinician@example.com", "role": "clinician"})
     pg.goto(base + "/")
     pg.wait_for_timeout(1500)
     if "--start" in sys.argv:

@@ -15,7 +15,8 @@ _Decision support for clinicians. Not a diagnostic device._
 ```bash
 ./start.sh --demo        # first run installs everything; then open http://127.0.0.1:8000
 ```
-That starts the FastAPI server and wrist bridge, the Photon iMessage sidecar, and the Fetch.ai agents. With
+Open http://127.0.0.1:8000, sign in with any email and pick **Caregiver** or **Clinician** (demo sign-in, no
+password). That starts the FastAPI server and wrist bridge, the Photon iMessage sidecar, and the Fetch.ai agents. With
 `--demo`, a simulated wrist replays checks if the FREE-WILi is missing or gets unplugged. Ctrl+C stops everything.
 
 Requirements: Python 3.11+, Node 20+ (for iMessage), ffmpeg (only to regenerate voice prompts), a FREE-WILi on USB.
@@ -49,8 +50,9 @@ Uploads are hashed, so later starts never re-send unchanged files, and nothing u
 | `DEMO_MODE=true` | replay if the device disconnects | |
 
 ## How it works
-- **Wrist** (`taptrack/bridge.py`): blue starts a check, red logs a dose, gray cancels, yellow/green are the tap
-  test. One instruction per screen, a spoken prompt, the 7 LEDs as a countdown and progress bar, then the exact
+- **Wrist** (`taptrack/bridge.py`): the main screen whenever idle. Blue starts a check, red logs a dose
+  ("Dose logged" for 3 s), gray cancels, yellow/green are the tap test. After the last test: "Calculating", then the
+  result for 60 s or until any button press, then back to the main screen. One instruction per screen, a spoken prompt, the 7 LEDs as a countdown and progress bar, then the exact
   score is spoken and the screen shows the word (Good / Lower than usual / Much lower). Passive tremor is
   sampled between checks when the wrist is still.
 - **Metrics** (`taptrack/metrics.py`, numpy/scipy): flips/s, amplitude and decrement; tremor RMS with a

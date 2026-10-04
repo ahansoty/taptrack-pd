@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/app.css">
   <style>
-    .status-big { font-size: 1.6rem; font-weight: 700; margin: 4px 0 8px; }
+    .status-big { font-size: 1.9rem; font-weight: 600; letter-spacing: -.02em; color: var(--ink); margin: 4px 0 8px; line-height: 1.15; }
     .missed li { display: flex; gap: 12px; padding: 10px 0; border-top: 1px solid var(--grid); }
     .missed time { font-weight: 700; min-width: 5.5em; }
     main { max-width: 1100px; }
@@ -32,7 +32,7 @@
 </header>
 <main id="main">
   <div class="grid">
-    <section class="card span-7" aria-labelledby="h-status">
+    <section class="card span-7" id="status-card" aria-labelledby="h-status">
       <h2 id="h-status">How things look right now</h2>
       <p class="status-big" id="status-line" aria-live="polite">Loading…</p>
       <div class="hero"><span class="num" id="score">—</span><span class="of">/ 100</span><span id="level"></span></div>
@@ -75,6 +75,7 @@ async function load() {
   const c = cg.latest;
   if (c && c.score != null) {
     $("score").textContent = Math.round(c.score);
+    TT.statusClass($("status-card"), c.level);
     $("level").innerHTML = TT.levelHTML(c.level);
     $("status-line").textContent = describe(c.level);
     $("score-when").textContent = `Checked ${TT.fmtDay(c.ts)} at ${TT.fmtTime(c.ts)}, ${TT.fmtMins(c.minutes_since_dose)} after a dose.`;
@@ -111,7 +112,7 @@ TT.live((e) => {
   if (e.type === "device" || e.type === "hello") TT.deviceBadge($("device"), e.device || e);
   if (e.type === "check_result") TT.toast(`New check: ${e.score} (${e.level})`);
 });
-load().catch(console.error);
+TT.session().then(() => load()).catch(console.error);
 </script>
 </body>
 </html>

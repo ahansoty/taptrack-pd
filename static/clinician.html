@@ -28,7 +28,7 @@
 <main id="main">
   <div class="grid">
     <!-- headline -->
-    <section class="card span-4" aria-labelledby="h-latest">
+    <section class="card span-4" id="latest-card" aria-labelledby="h-latest">
       <h2 id="h-latest">Latest check</h2>
       <p class="sub" id="latest-when">—</p>
       <div class="hero"><span class="num" id="latest-score">—</span><span class="of">/ 100</span><span id="latest-level"></span></div>
@@ -128,6 +128,7 @@
 <footer class="foot"><strong>Decision support for clinicians. Not a diagnostic device.</strong>
   <div class="muted" id="foot-meta"></div></footer>
 <script src="/static/common.js"></script>
+<script>TT.session();</script>
 <script src="/static/clinician.js"></script>
 </body>
 </html>
