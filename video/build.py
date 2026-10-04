@@ -524,6 +524,34 @@ def write_script_md(scenes, starts, total, path):
 
 # ---------------------------------------------------------------------------------------------- short cut
 SHORT_LEN = {"hook": 7.0, "wearable": 13.5, "live": 11.5, "pattern": 10.5, "agent": 12.5, "close": 7.0}
+IRL = ROOT / "video_irl.MOV"          # real filmed check (portrait); replaces the animated watch in the short when present
+IRL_IN, IRL_OUT, IRL_SPEED = 2.0, 91.5, 6.0
+
+
+def irl_segment(dur: float, out: Path):
+    """The filmed check, sped up, framed on the left with a label on the right."""
+    tf = OUT / "irl_text"
+    tf.mkdir(exist_ok=True)
+    texts = {"k": "THE REAL WEARABLE", "t": "A one-minute check", "b": "Hand flips · Hold still · Taps · Say “ahhh”",
+             "n": f"Filmed on the FREE-WILi · sped up {IRL_SPEED:g}x", "r": "Lights count down, then fill.  Red means much lower."}
+    for k, v in texts.items():
+        (tf / f"{k}.txt").write_text(v, encoding="utf-8")
+    font = FONT_BOLD
+    reg = "C\:/Windows/Fonts/segoeui.ttf"
+    T = lambda k: (tf / f"{k}.txt").as_posix().replace(":", "\:")
+    graph = (f"[1:v]trim=start={IRL_IN}:end={IRL_OUT},setpts=(PTS-STARTPTS)/{IRL_SPEED},fps={FPS},crop=iw:iw*4/3:0:(ih-oh)*0.45,scale=676:900,"
+             f"tpad=stop_mode=clone:stop_duration={dur}[v];"
+             f"[0:v]drawbox=x=176:y=42:w=692:h=916:color=0x132238:t=fill[bg];"
+             f"[bg][v]overlay=184:50:shortest=0,"
+             f"drawtext=fontfile='{font}':textfile='{T('k')}':x=960:y=330:fontsize=30:fontcolor=0x2DB3A6,"
+             f"drawtext=fontfile='{font}':textfile='{T('t')}':x=956:y=380:fontsize=80:fontcolor=0x132238,"
+             f"drawtext=fontfile='{reg}':textfile='{T('b')}':x=960:y=500:fontsize=38:fontcolor=0x3D4A60,"
+             f"drawtext=fontfile='{reg}':textfile='{T('r')}':x=960:y=560:fontsize=38:fontcolor=0x3D4A60,"
+             f"drawtext=fontfile='{font}':textfile='{T('n')}':x=960:y=650:fontsize=28:fontcolor=0x5F6B80,"
+             f"trim=duration={dur},setpts=PTS-STARTPTS[o]")
+    ff("-f", "lavfi", "-i", f"color=c={BG}:s=1920x1080:r={FPS}:d={dur}", "-i", IRL, "-filter_complex", graph,
+       "-map", "[o]", *enc(out))
+    return out
 
 
 def build_short(nar, full):
@@ -536,6 +564,8 @@ def build_short(nar, full):
         line = plan[sid]
         # ~60 s total: each segment holds its visual a few seconds past the line
         dur = round(max(line["sec"] + 1.6, SHORT_LEN[sid]), 2)
+        if IRL.exists() and sid in ("wearable", "live"):   # the filmed check takes the time; the live clip gets shorter
+            dur = {"wearable": round((IRL_OUT - IRL_IN) / IRL_SPEED + 2.0, 2), "live": 8.0}[sid]
         src = by[sid]
         if sid == "wearable":   # the tests cycling on the watch
             start = next(tt for (tt, _, text, _) in src.narr if text.startswith("Ten seconds")) - 0.2
@@ -546,7 +576,10 @@ def build_short(nar, full):
         else:
             start = windows[sid][0]
         clip = OUT / "clips" / f"short_{sid}.mp4"
-        ff("-ss", f"{start:.3f}", "-i", src.clip, "-t", f"{dur:.3f}", *enc(clip))
+        if sid == "wearable" and IRL.exists():
+            irl_segment(dur, clip)
+        else:
+            ff("-ss", f"{start:.3f}", "-i", src.clip, "-t", f"{dur:.3f}", *enc(clip))
         sc = Scene(sid)
         sc.clip, sc.dur, sc.captions = clip, dur, sid not in ("hook", "close")
         sc.narr = [(0.5 if sid != "close" else 0.8, line["wav"], line["text"], line["sec"])]
