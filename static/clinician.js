@@ -138,8 +138,9 @@ function agentFeed(actions) {
   // unsent manual test messages are diagnostics, not care-agent activity
   actions = actions.filter((a) => !(a.kind === "test_message" && a.detail && a.detail.sent === false));
   if (!actions.length) return;
-  const sent = (d) => (d.sent === true ? " · iMessage sent" : d.sent === false ? ` · not sent: ${d.error || "?"}` : "");
-  $("agent-feed").innerHTML = actions.map((a) => `<li><time>${TT.fmtTime(a.ts)}</time><span><strong>${TT.esc(a.kind.replace(/_/g, " "))}</strong> · ${TT.esc(TT.plurals(a.detail.text || a.detail.summary || JSON.stringify(a.detail)) + sent(a.detail))}</span></li>`).join("");
+  const sent = (d) => (d.sent === true ? ' · <span class="ok-note">iMessage sent</span>'
+    : d.sent === false ? ` · <span class="muted" title="${TT.esc(d.error || "")}">not delivered</span>` : "");
+  $("agent-feed").innerHTML = actions.map((a) => `<li><time>${TT.fmtTime(a.ts)}</time><span><strong>${TT.esc(a.kind.replace(/_/g, " "))}</strong> · ${TT.esc(TT.plurals(a.detail.text || a.detail.summary || JSON.stringify(a.detail)))}${sent(a.detail)}</span></li>`).join("");
 }
 
 function renderRecord(rec, outbox) {

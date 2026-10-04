@@ -43,3 +43,9 @@ _Morning summary goes here when the night is done._
   Oct 4 (commit 14f3cfd). Impact: someone could forge a dashboard sign-in cookie for the local dashboard (demo-grade
   sign-in; no patient data beyond synthetic). Fixed: untracked + ignored, and a new key generated locally, so the
   published one no longer works. It remains in git history (no history rewrite, per your rules).
+- 03:17 Final judging configuration running (`./start.sh`, demo mode off, Photon on). Recorded the agent scene.
+  iMessage budget used (2 sends): #1 caregiver alert for a simulated "Much lower" check (score 32) DELIVERED.
+  #2 "report sent / follow-up Tue Oct 6 10:30 AM" REJECTED by Photon: "New contact has sent 2 of 3 messages; replies
+  are limited ... until they respond". => The caregiver phone must text the TapTrack iMessage line once before judging
+  (see "Needs you in the morning"). Same for the patient phone if you want missed-check reminders to go through.
+  No further sends overnight.

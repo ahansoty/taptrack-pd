@@ -220,3 +220,4 @@ nav.views { flex-wrap: wrap; }
 .finch-meta dt { font-size: .62rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); align-self: center; }
 .finch-meta dd { margin: 0; color: var(--ink); font-variant-numeric: tabular-nums; }
 .finch-meta div:first-child dd { font-family: ui-monospace, Consolas, monospace; font-size: .82rem; }
+.ok-note { color: var(--good-ink); font-weight: 600; }

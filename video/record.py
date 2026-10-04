@@ -117,6 +117,18 @@ def rec_caregiver():
         finish(b, ctx, pg, "caregiver")
 
 
+def rec_feed():
+    """Agent activity after the report request (no messages sent)."""
+    with sync_playwright() as p:
+        b, ctx = session(p)
+        pg = ctx.new_page()
+        pg.goto(BASE + "/")
+        pg.wait_for_timeout(2000)
+        smooth_scroll(pg, y_of(pg, "#h-agent", 120))
+        pg.wait_for_timeout(9000)
+        finish(b, ctx, pg, "feed")
+
+
 def rec_agent():
     with sync_playwright() as p:
         b, ctx = session(p)
@@ -131,11 +143,20 @@ def rec_agent():
         pg.wait_for_function("document.querySelector('#live-result .num') !== null", timeout=150000)
         pg.wait_for_timeout(2500)
         smooth_scroll(pg, y_of(pg, "#h-agent", 260))
-        pg.wait_for_timeout(9000)                            # agent alert lands in the feed
+        pg.wait_for_function("document.querySelector('#agent-feed').innerText.includes('caregiver alert')", timeout=60000)
+        pg.wait_for_timeout(4000)                            # agent's caregiver alert in the feed
+        # ask the agent (through Agentverse, like ASI:One) to send the visit report
+        import subprocess
+        chat = subprocess.Popen([str(HERE.parent / "agent" / ".venv" / "Scripts" / "python"), "-u",
+                                 str(HERE.parent / "agent" / "test_chat.py"), "Send the visit report to her neurologist"],
+                                stdout=open(OUT / "agent_chat.log", "w"), stderr=subprocess.STDOUT)
+        pg.wait_for_function("document.querySelector('#agent-feed').innerText.includes('offered')", timeout=120000)
+        pg.wait_for_timeout(6000)
+        chat.wait(timeout=60)
         finish(b, ctx, pg, "agent")
 
 
 if __name__ == "__main__":
     what = sys.argv[1] if len(sys.argv) > 1 else "live"
     yesterday = (dt.date.today() - dt.timedelta(days=1)).isoformat()
-    {"live": rec_live, "pattern": lambda: rec_pattern(yesterday), "caregiver": rec_caregiver, "agent": rec_agent}[what]()
+    {"live": rec_live, "pattern": lambda: rec_pattern(yesterday), "caregiver": rec_caregiver, "agent": rec_agent, "feed": rec_feed}[what]()
