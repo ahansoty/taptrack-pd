@@ -9,11 +9,12 @@ load_dotenv(ROOT / ".env")
 
 
 def _flag(name: str, default: bool = False) -> bool:
-    return os.getenv(name, str(default)).strip().lower() in ("1", "true", "yes", "on")
+    return env(name, str(default)).lower() in ("1", "true", "yes", "on")
 
 
 def env(name: str, default: str = "") -> str:
-    return os.getenv(name, default).strip()
+    """Blank values in .env count as unset, so code defaults apply."""
+    return (os.getenv(name) or "").strip() or default
 
 
 DATA_DIR = ROOT / "data"

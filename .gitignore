@@ -7,3 +7,5 @@ data/*.db-*
 audio/out/
 .pytest_cache/
 agent/*_data.json
+data/shots/
+data/*.log

@@ -97,7 +97,7 @@ def generate(days: int = 14, end_ts: float | None = None, seed: int = 7) -> dict
         day_frac = i / max(days - 1, 1)
         # active checks
         for hhmm in config.CHECK_TIMES:
-            ts = _at(day, hhmm) + rng.normal(0, 12) * 60
+            ts = _at(day, hhmm) + rng.normal(0, 18) * 60
             if ts > end_ts:
                 continue
             if (day == missed_cluster[0] and hhmm in missed_cluster[1]) or rng.random() < 0.07:

@@ -1,1 +1,117 @@
-<!doctype html><title>TapTrack PD</title>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TapTrack PD · Clinician</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232a78d6'/><path d='M5 18h5l3-8 4 14 3-8h7' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <div class="brand">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M5 18h5l3-8 4 14 3-8h7" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    TapTrack PD
+  </div>
+  <div class="who">Patient <strong id="pname">…</strong> · <span id="sched">levodopa</span></div>
+  <span id="device" class="pill" role="status" aria-live="polite"><span class="dot" aria-hidden="true"></span>Connecting…</span>
+  <nav class="views" aria-label="Views">
+    <a href="/" aria-current="page">Clinician</a>
+    <a href="/caregiver">Caregiver</a>
+  </nav>
+</header>
+
+<main id="main">
+  <div class="grid">
+    <!-- headline -->
+    <section class="card span-4" aria-labelledby="h-latest">
+      <h2 id="h-latest">Latest check</h2>
+      <p class="sub" id="latest-when">—</p>
+      <div class="hero"><span class="num" id="latest-score">—</span><span class="of">/ 100</span><span id="latest-level"></span></div>
+      <p class="sub" style="margin-top:10px" id="latest-dose"></p>
+      <div class="row">
+        <button class="primary" id="btn-check">Start wrist check</button>
+        <button id="btn-dose">Log dose now</button>
+      </div>
+    </section>
+    <section class="card span-8" aria-labelledby="h-pattern">
+      <h2 id="h-pattern">14-day pattern</h2>
+      <p class="sub">Composite motor score (0-100) vs. this patient's own ON-state baseline. 85 = at baseline.</p>
+      <div class="tiles" id="tiles"></div>
+    </section>
+
+    <!-- today -->
+    <section class="card span-8" aria-labelledby="h-today">
+      <div class="row"><h2 id="h-today">Today</h2><span class="spacer"></span><span class="muted" id="today-date"></span></div>
+      <p class="sub">Each dot is one wrist check. Purple markers are logged levodopa doses. Shaded band = good (70+).</p>
+      <div id="today-chart" aria-describedby="today-desc"></div>
+      <p id="today-desc" class="sr-only"></p>
+      <div class="legend"><span class="key"><span class="ln" style="border-color:var(--series-1)"></span>Composite score</span>
+        <span class="key"><span class="sw" style="background:var(--series-2);border-radius:50%"></span>Live check (this session)</span>
+        <span class="key"><span class="ln" style="border-color:var(--dose)"></span>Dose</span></div>
+      <details><summary>Show today's checks as a table</summary><div id="today-table"></div></details>
+    </section>
+
+    <!-- live -->
+    <section class="card span-4" aria-labelledby="h-live">
+      <h2 id="h-live">Live from the wrist</h2>
+      <p class="sub" id="live-sub">Waiting for the next check.</p>
+      <div class="steps" id="steps"></div>
+      <div id="live-result" aria-live="polite"></div>
+      <h2 style="font-size:.95rem;margin-top:14px">Activity</h2>
+      <ul class="feed" id="feed" aria-live="polite"></ul>
+    </section>
+
+    <!-- dose response -->
+    <section class="card span-6" aria-labelledby="h-curve">
+      <h2 id="h-curve">Dose response, last 14 days</h2>
+      <p class="sub">Mean score by time since the last dose (band = ±1 SD). A drop after the peak is the wearing-off window.</p>
+      <div id="curve-chart"></div>
+      <details><summary>Show as a table</summary><div id="curve-table"></div></details>
+    </section>
+
+    <!-- heatmap -->
+    <section class="card span-6" aria-labelledby="h-heat">
+      <h2 id="h-heat">Score by hours since dose, per day</h2>
+      <p class="sub">Each cell is the mean score for that day and time since dose. Blank = no check.</p>
+      <div id="heatmap"></div>
+      <div class="scale" aria-hidden="true">Low <span class="bar" id="scale-bar"></span> Good</div>
+    </section>
+
+    <!-- breakdown -->
+    <section class="card span-6" aria-labelledby="h-tests">
+      <h2 id="h-tests">Per-test breakdown</h2>
+      <p class="sub">Mean sub-score at peak (1-2.5 h after a dose) vs. late (3-4 h after a dose).</p>
+      <div class="bars" id="bars"></div>
+      <div class="legend"><span class="key"><span class="sw" style="background:var(--series-1)"></span>Peak (1-2.5 h)</span>
+        <span class="key"><span class="sw" style="background:var(--series-2)"></span>Late (3-4 h)</span></div>
+      <div id="latest-tests" style="margin-top:14px"></div>
+    </section>
+
+    <!-- report -->
+    <section class="card span-6" aria-labelledby="h-report">
+      <div class="row"><h2 id="h-report">Visit report</h2><span class="spacer"></span>
+        <button class="primary" id="btn-report">Generate visit report</button></div>
+      <p class="sub" id="report-sub">Summarises patterns only. It never recommends medication changes.</p>
+      <div class="tabs" role="tablist">
+        <button role="tab" aria-selected="true" aria-controls="rep-neuro" id="tab-neuro">Neurologist</button>
+        <button role="tab" aria-selected="false" aria-controls="rep-patient" id="tab-patient">Patient summary</button>
+      </div>
+      <div id="rep-neuro" role="tabpanel" aria-labelledby="tab-neuro" class="report"><p class="muted">No report generated yet.</p></div>
+      <div id="rep-patient" role="tabpanel" aria-labelledby="tab-patient" class="report" hidden></div>
+    </section>
+
+    <section class="card span-12" aria-labelledby="h-agent">
+      <h2 id="h-agent">Care-team agent (Fetch.ai)</h2>
+      <p class="sub">Actions the TapTrack agent on Agentverse took from this data.</p>
+      <ul class="feed" id="agent-feed"><li class="muted">No agent actions yet.</li></ul>
+    </section>
+  </div>
+</main>
+<footer class="foot"><strong>Decision support for clinicians. Not a diagnostic device.</strong>
+  <div class="muted" id="foot-meta"></div></footer>
+<script src="/static/common.js"></script>
+<script src="/static/clinician.js"></script>
+</body>
+</html>

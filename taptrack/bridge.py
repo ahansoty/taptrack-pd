@@ -117,6 +117,7 @@ class Bridge(threading.Thread):
 
     def _enter_demo(self):
         sim = SimDevice(state=self._synthetic_state_now())
+        sim.open()
         self._attach(sim)
         self.demo = True
         self.state = "demo"

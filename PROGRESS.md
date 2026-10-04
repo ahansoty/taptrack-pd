@@ -15,6 +15,12 @@
   ~8% missed checks plus one missed afternoon. Mean score by time since dose: 0-30 min 28, 1-3 h ~82,
   3-4 h 44. Auto-seeded on server start if no recent synthetic data.
 
+- Phase 4: dashboard served by FastAPI. `/` clinician (latest score, 14-day tiles, today's curve with
+  dose markers, dose-response curve +/-SD, 14-day heatmap by hours since dose, per-test peak vs late,
+  live websocket panel, visit report panel, agent actions), `/caregiver` (status in words, last/next dose,
+  missed checks, messages). Light + dark, keyboard accessible, tables for every chart, phone width OK.
+  Footer: "Decision support for clinicians. Not a diagnostic device."
+
 ## Disabled (missing keys)
 - Tiger Data (DATABASE_URL) -> SQLite fallback
 - Gemini (GEMINI_API_KEY) -> template report

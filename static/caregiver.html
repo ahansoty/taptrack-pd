@@ -1,1 +1,114 @@
-<!doctype html><title>TapTrack PD</title>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TapTrack PD · Caregiver</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232a78d6'/><path d='M5 18h5l3-8 4 14 3-8h7' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="stylesheet" href="/static/app.css">
+  <style>
+    .status-big { font-size: 1.6rem; font-weight: 700; margin: 4px 0 8px; }
+    .missed li { display: flex; gap: 12px; padding: 10px 0; border-top: 1px solid var(--grid); }
+    .missed time { font-weight: 700; min-width: 5.5em; }
+    main { max-width: 1100px; }
+  </style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="top">
+  <div class="brand">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M5 18h5l3-8 4 14 3-8h7" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    TapTrack PD
+  </div>
+  <div class="who">Caring for <strong id="pname">…</strong></div>
+  <span id="device" class="pill" role="status" aria-live="polite"><span class="dot" aria-hidden="true"></span>Connecting…</span>
+  <nav class="views" aria-label="Views">
+    <a href="/">Clinician</a>
+    <a href="/caregiver" aria-current="page">Caregiver</a>
+  </nav>
+</header>
+<main id="main">
+  <div class="grid">
+    <section class="card span-7" aria-labelledby="h-status">
+      <h2 id="h-status">How things look right now</h2>
+      <p class="status-big" id="status-line" aria-live="polite">Loading…</p>
+      <div class="hero"><span class="num" id="score">—</span><span class="of">/ 100</span><span id="level"></span></div>
+      <p class="sub" id="score-when" style="margin-top:8px"></p>
+      <div class="tiles" style="margin-top:12px">
+        <div class="tile"><div class="label">Last dose</div><div class="value" id="last-dose">—</div><div class="note" id="last-dose-ago"></div></div>
+        <div class="tile"><div class="label">Next scheduled dose</div><div class="value" id="next-dose">—</div><div class="note">from the medication schedule</div></div>
+        <div class="tile"><div class="label">Checks today</div><div class="value" id="checks-today">—</div><div class="note" id="checks-note"></div></div>
+      </div>
+    </section>
+    <section class="card span-5" aria-labelledby="h-missed">
+      <h2 id="h-missed">Missed checks today</h2>
+      <p class="sub">A check counts as missed if none was done within 45 minutes of its scheduled time.</p>
+      <ul class="missed feed" id="missed" style="max-height:none"></ul>
+      <p class="sub" id="missed-week" style="margin-top:10px"></p>
+    </section>
+    <section class="card span-7" aria-labelledby="h-day">
+      <h2 id="h-day">Today at a glance</h2>
+      <p class="sub">Each dot is one check. Purple markers are doses. Higher is better.</p>
+      <div id="today-chart"></div>
+    </section>
+    <section class="card span-5" aria-labelledby="h-msgs">
+      <h2 id="h-msgs">Messages and reminders</h2>
+      <p class="sub">Reminders and alerts sent by the care-team agent.</p>
+      <ul class="feed" id="actions"><li class="muted">Nothing sent yet.</li></ul>
+      <div class="row" style="margin-top:12px"><button id="btn-test-msg">Send test message</button><span class="muted" id="msg-status"></span></div>
+    </section>
+  </div>
+</main>
+<footer class="foot"><strong>Decision support for clinicians. Not a diagnostic device.</strong>
+  <div class="muted">If you are worried about sudden changes, contact the care team. In an emergency call 911.</div></footer>
+<script src="/static/common.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const describe = (lvl) => ({ good: "Moving well on the latest check.", fair: "Somewhat slower than usual on the latest check.", low: "Much slower than usual on the latest check.", none: "No check yet today." }[lvl]);
+async function load() {
+  const [status, cg, t] = await Promise.all([TT.api("/api/status"), TT.api("/api/caregiver"), TT.api("/api/today")]);
+  $("pname").textContent = status.patient.name;
+  TT.deviceBadge($("device"), status.device);
+  const c = cg.latest;
+  if (c && c.score != null) {
+    $("score").textContent = Math.round(c.score);
+    $("level").innerHTML = TT.levelHTML(c.level);
+    $("status-line").textContent = describe(c.level);
+    $("score-when").textContent = `Checked ${TT.fmtDay(c.ts)} at ${TT.fmtTime(c.ts)}, ${TT.fmtMins(c.minutes_since_dose)} after a dose.`;
+  } else { $("status-line").textContent = describe("none"); }
+  $("last-dose").textContent = cg.last_dose ? TT.fmtTime(cg.last_dose) : "—";
+  $("last-dose-ago").textContent = cg.last_dose ? `${TT.fmtMins((Date.now() / 1000 - cg.last_dose) / 60)} ago` : "";
+  $("next-dose").textContent = cg.next_dose ? TT.fmtTime(cg.next_dose) : "Tomorrow";
+  $("checks-today").textContent = `${cg.checks_today} of ${cg.expected_so_far}`;
+  $("checks-note").textContent = "done so far today";
+  $("missed").innerHTML = cg.missed_today.length
+    ? cg.missed_today.map((m) => `<li><time>${TT.fmtTime(m.ts)}</time><span>Scheduled check not done</span></li>`).join("")
+    : `<li><span>${TT.levelHTML("good")} No missed checks today.</span></li>`;
+  $("missed-week").textContent = `${cg.missed_7d} missed in the last 7 days.`;
+  if (cg.actions.length) $("actions").innerHTML = cg.actions.map((a) => `<li><time>${TT.fmtTime(a.ts)}</time><span><strong>${TT.esc(a.kind.replace(/_/g, " "))}</strong> · ${TT.esc(a.detail.text || a.detail.summary || "")}</span></li>`).join("");
+  const ds = t.start;
+  TT.lineChart($("today-chart"), {
+    x: [6, 23], y: [0, 100], height: 240, band: [70, 100], bandLabel: "good", yTicks: [0, 50, 100],
+    xTicks: [6, 9, 12, 15, 18, 21].map((h) => ({ v: h, label: h === 12 ? "12 PM" : h < 12 ? `${h} AM` : `${h - 12} PM` })),
+    doses: t.doses.map((d) => ({ x: (d.ts - ds) / 3600, label: "Dose" })).filter((d) => d.x >= 6 && d.x <= 23),
+    series: [{ points: t.checks.filter((c) => c.score != null).map((c) => ({ x: (c.ts - ds) / 3600, y: Math.round(c.score), c, live: c.source !== "synthetic" })), gap: 3 }],
+    ariaLabel: "Today's check scores",
+    tooltip: (p) => `<strong>${p.y}</strong> at ${TT.fmtTime(p.c.ts)}`,
+  });
+}
+$("btn-test-msg").onclick = async (ev) => {
+  ev.target.disabled = true;
+  try { const r = await TT.post("/api/notify/test", {}); $("msg-status").textContent = r.ok ? "Sent." : (r.error || "Messaging not configured."); }
+  catch (e) { $("msg-status").textContent = "Messaging not available."; }
+  ev.target.disabled = false;
+};
+let t;
+TT.live((e) => {
+  if (["check_result", "dose", "agent_action", "notification"].includes(e.type)) { clearTimeout(t); t = setTimeout(load, 800); }
+  if (e.type === "device" || e.type === "hello") TT.deviceBadge($("device"), e.device || e);
+  if (e.type === "check_result") TT.toast(`New check: ${e.score} (${e.level})`);
+});
+load().catch(console.error);
+</script>
+</body>
+</html>
