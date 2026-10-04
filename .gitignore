@@ -19,3 +19,4 @@ data/*.json
 data/video/
 data/raw/
 audio/src/
+data/.session_key
