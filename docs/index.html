@@ -108,7 +108,6 @@
       <a class="hide-sm" href="#how">How it works</a>
       <a class="hide-sm" href="#clinic">Clinicians</a>
       <a class="hide-sm" href="#agent">Care agent</a>
-      <a href="https://github.com/ahansoty/taptrack-pd">GitHub</a>
       <a class="signin" href="http://127.0.0.1:8000/login">Sign in</a>
     </nav>
   </div>
@@ -117,14 +116,13 @@
 <main id="top">
   <div class="wrap hero">
     <div>
-      <p class="kicker caps">MHacks 2026 · Parkinson's disease</p>
+      <p class="kicker caps">For Parkinson's care</p>
       <h1>Parkinson's changes hour&nbsp;by&nbsp;hour.</h1>
       <p class="tagline">Neurologists see it a few times a year. TapTrack PD shows them the hours they're missing.</p>
       <p class="lede">A one-minute check on the wrist, several times a day, tagged with the time since the last levodopa dose.</p>
       <div class="actions">
         <a class="btn primary" href="http://127.0.0.1:8000/login">Sign in to the app</a>
         <a class="btn" href="#clinic">See the dashboard</a>
-        <a class="btn" href="https://github.com/ahansoty/taptrack-pd">Source on GitHub</a>
       </div>
     </div>
     <div class="device" aria-label="Screens on the wrist device">
@@ -179,7 +177,7 @@
     <div class="wrap">
       <p class="kicker caps">For clinicians</p>
       <h2>Wearing-off, visible at a glance.</h2>
-      <p class="lede">Every result is tagged with time since dose. In this synthetic patient, scores peak 1 to 2.5 hours after a dose and fall about 45 points by 3 to 4 hours: the wearing-off window, measured instead of remembered. One click writes a visit report for the neurologist and a plain-language summary for the patient. Patterns only, never dose advice.</p>
+      <p class="lede">Every result is tagged with time since dose. In this example, scores peak 1 to 2.5 hours after a dose and fall about 45 points by 3 to 4 hours: the wearing-off window, measured instead of remembered. One click writes a visit report for the neurologist and a plain-language summary for the patient. Patterns only, never dose advice.</p>
       <div class="shot"><img src="img/dashboard.jpg" alt="Clinician dashboard: latest check, 14-day pattern, today's scores with dose markers, dose-response curve and heatmap by hours since dose" width="1400" height="1180" loading="lazy"></div>
       <div class="grid3" style="margin-top:14px">
         <div class="panel"><span class="caps">14 days</span><h3>Dose-response curve</h3><p>Mean score by hours since the last dose, with spread.</p></div>
@@ -194,8 +192,7 @@
       <div>
         <p class="kicker caps">Care agent</p>
         <h2>It acts on the pattern, not just shows it.</h2>
-        <p>A Fetch.ai agent on Agentverse watches the data. When a check scores red it texts the caregiver over iMessage. When a scheduled check is missed it nudges the patient. When a wearing-off pattern appears it sends the visit report to the clinic's scheduling agent and requests a follow-up. Caregivers can text back to ask how the day is going, or ask the agent in ASI:One.</p>
-        <div class="chips"><span class="chip">FREE-WILi</span><span class="chip">Fetch.ai</span><span class="chip">Photon iMessage</span><span class="chip">Gemini</span><span class="chip">ElevenLabs</span><span class="chip">Tiger Data</span><span class="chip">FinchNode</span><span class="chip">Figma</span></div>
+        <p>A care agent watches every check. When a result comes back much lower than usual, it texts the caregiver. When a check is missed, it nudges the patient. When a wearing-off pattern appears, it sends the visit report to the clinic and asks for a follow-up. Caregivers can text back any time to ask how the day is going.</p>
       </div>
       <div class="device" aria-label="Example iMessage conversation">
         <div class="msg">TapTrack alert: Harriet's 2:41 PM check was much lower than usual (score 38; usual is about 85). It was 3 h 10 min after the last dose. Reply 'today' for a summary.</div>
@@ -208,10 +205,10 @@
 
   <section>
     <div class="wrap">
-      <div class="panel good" style="text-align:center">
-        <span class="caps">Built at MHacks 2026</span>
-        <h2>One FREE-WILi on a watch strap, a FastAPI service, TimescaleDB, and two cooperating agents.</h2>
-        <div class="actions" style="justify-content:center"><a class="btn primary" href="https://github.com/ahansoty/taptrack-pd">Read the code</a><a class="btn" href="https://github.com/ahansoty/taptrack-pd#3-minute-demo-script">Demo script</a></div>
+      <div class="panel good" style="text-align:center;padding:36px 28px">
+        <span class="caps">TapTrack PD</span>
+        <h2 style="margin:8px auto 18px;max-width:22em">The hours between visits, in front of the neurologist.</h2>
+        <div class="actions" style="justify-content:center;margin-top:0"><a class="btn primary" href="http://127.0.0.1:8000/login">Sign in</a><a class="btn" href="#how">How it works</a></div>
       </div>
     </div>
   </section>
@@ -220,7 +217,7 @@
 <footer>
   <div class="wrap">
     <strong>Decision support for clinicians. Not a diagnostic device.</strong>
-    TapTrack PD is a research prototype. Patient data shown is synthetic. Never change medication without your care team.
+    Example data shown is fictional. Never change medication without talking to your care team.
   </div>
 </footer>
 </body>
