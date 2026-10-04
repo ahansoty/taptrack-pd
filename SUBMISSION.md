@@ -52,6 +52,20 @@ neurologist", "Remind her about the missed check". Copy the **shared chat URL** 
 3. Confirm to get a **Team ID**. Each teammate chats with the same agent, clicks **Join with Team ID**.
 4. Status shows "Submitted" once everyone has joined.
 
+### Paste into the MHacks Submission Agent
+- **Project name:** TapTrack PD
+- **Problem it solves:** Most people with Parkinson's take levodopa several times a day, and each dose wears off
+  before the next. Neurologists adjust timing from patient memory at visits months apart. TapTrack PD measures
+  motor function on the wrist several times a day, tags every result with time since the last dose, and its
+  Fetch.ai agent turns that into action: it texts the caregiver when a check scores red, reminds the patient about
+  missed checks, and sends the neurologist a visit report with a follow-up request when a wearing-off pattern
+  appears. Decision support only, never dose advice.
+- **GitHub:** https://github.com/ahansoty/taptrack-pd
+- **Agent profile:** https://agentverse.ai/agents/details/agent1q0m06w5n433l7wlefgjw5pmvu0eweuepj3trmgp926wwn7wykjefs3pj0n2/profile
+- **Shared chat URL:** (copy from ASI:One after chatting with the agent)
+- **Demo video:** (link once uploaded)
+- **Website:** https://taptrack.tech
+
 ### 4. Devpost
 Repo link, 3 to 5 min video, agent names + addresses, and the Fetch.ai track selected.
 
