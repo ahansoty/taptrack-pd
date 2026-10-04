@@ -1,6 +1,6 @@
 """TapTrack PD care-team agent (Fetch.ai uAgents, Agentverse mailbox, ASI:One chat protocol).
 
-Two agents run in one Bureau:
+Two agents run in one process, each with its own server (port 8001 care, 8002 clinic):
 - taptrack-care  (mailbox, registered on Agentverse, discoverable in ASI:One): watches the TapTrack API and
   decides what to do:
     * red score on a wrist check      -> iMessage alert to the caregiver (Photon)
@@ -25,7 +25,7 @@ from uuid import uuid4
 
 import httpx
 from dotenv import load_dotenv
-from uagents import Agent, Bureau, Context, Model, Protocol
+from uagents import Agent, Context, Model, Protocol
 from uagents_core.contrib.protocols.chat import (
     ChatAcknowledgement,
     ChatMessage,
@@ -68,7 +68,9 @@ def seed(name: str) -> str:
 
 care = Agent(name="taptrack-care", seed=seed("care"), port=int(env("AGENT_PORT", "8001")), mailbox=True,
              publish_agent_details=True, readme_path=str(HERE / "README.md"))
-clinic = Agent(name="taptrack-clinic", seed=seed("clinic"))
+CLINIC_PORT = int(env("CLINIC_PORT", "8002"))
+clinic = Agent(name="taptrack-clinic", seed=seed("clinic"), port=CLINIC_PORT,
+               endpoint=[f"http://127.0.0.1:{CLINIC_PORT}/submit"])
 
 
 # ------------------------------------------------------------------ agent-to-agent models
@@ -246,12 +248,17 @@ async def on_ack(ctx: Context, sender: str, msg: ChatAcknowledgement):
 care.include(chat, publish_manifest=True)
 
 if __name__ == "__main__":
+    import asyncio
+
     port = int(env("AGENT_PORT", "8001"))
     print(f"taptrack-care   {care.address}")
     print(f"taptrack-clinic {clinic.address}")
-    # Bureau doesn't log the inspector link; open it once, Connect -> Mailbox, to register on Agentverse
+    # Each agent runs its own server (not a Bureau): the Agentverse inspector talks to
+    # http://127.0.0.1:8001/agent_info and /connect, which a shared Bureau server can't answer
+    # without an x-uagents-address header. Open this once, Connect -> Mailbox:
     print(f"Agent inspector: https://agentverse.ai/inspect/?uri=http%3A//127.0.0.1%3A{port}&address={care.address}", flush=True)
-    bureau = Bureau(port=port)
-    bureau.add(care)
-    bureau.add(clinic)
-    bureau.run()
+    loop = care._loop  # both agents were created on the same default loop
+    try:
+        loop.run_until_complete(asyncio.gather(care.run_async(), clinic.run_async()))
+    except KeyboardInterrupt:
+        pass
