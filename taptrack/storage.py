@@ -74,7 +74,9 @@ class Storage:
             for r in cur.fetchall():
                 d = dict(zip(cols, r))
                 for k in JSON_COLS & d.keys():
-                    if isinstance(d[k], str):
+                    # SQLite stores JSON as text; psycopg already decodes JSONB (a JSON string
+                    # value comes back as a Python str and must not be decoded twice)
+                    if not self.pg and isinstance(d[k], str):
                         d[k] = json.loads(d[k])
                 if "ts" in d and d["ts"] is not None:
                     d["ts"] = float(d["ts"])
