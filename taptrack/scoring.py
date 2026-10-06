@@ -25,7 +25,7 @@ TEST_WEIGHTS = {"flip": 0.3, "taps": 0.3, "tremor": 0.2, "voice": 0.2}
 TEST_LABELS = {"flip": "Hand flipping", "tremor": "Tremor (hold still)", "taps": "Alternating taps", "voice": "Voice"}
 
 # Default baseline (mean, sd) used until the user has their own. Values are in the
-# device's units (see HARDWARE_NOTES.md) for a person in a good "on" state.
+# device's units (see hardware/NOTES.md) for a person in a good "on" state.
 DEFAULT_BASELINE = {
     "flip_rate": (3.6, 0.5),
     "flip_amp": (1.6, 0.25),

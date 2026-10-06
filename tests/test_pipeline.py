@@ -81,7 +81,7 @@ def test_red_button_logs_dose(store):
 
 
 def test_disconnect_switches_to_demo_replay(store, monkeypatch):
-    """A FREE-WILi that drops (unplugged during judging) -> simulated replay keeps the dashboard live."""
+    """A FREE-WILi that drops mid-session -> simulated replay keeps the dashboard live."""
     from taptrack import bridge as bridge_mod, config
     from taptrack.device import FreeWiliDevice
 

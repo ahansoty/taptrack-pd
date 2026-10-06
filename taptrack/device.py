@@ -236,7 +236,7 @@ class FreeWiliDevice(BaseDevice):
 
     def show(self, text):
         ok = self._call("show_text_display", self.dev.show_text_display, text) if self.dev else False
-        if self.buttons_on:  # set text before (re)enabling buttons: see HARDWARE_NOTES.md
+        if self.buttons_on:  # set text before (re)enabling buttons: see hardware/NOTES.md
             self._call("enable_button_events", self.dev.enable_button_events, True, 10)
         return ok
 
@@ -245,7 +245,7 @@ class FreeWiliDevice(BaseDevice):
         return self._call("set_board_leds", self.dev.set_board_leds, io, r, g, b) if self.dev else False
 
     def show_image(self, name):
-        # bare filename works, "/images/x.fwi" returns Invalid (HARDWARE_NOTES.md)
+        # bare filename works, "/images/x.fwi" returns Invalid (hardware/NOTES.md)
         ok = self._call("show_gui_image", self.dev.show_gui_image, f"{name}.fwi") if self.dev else False
         if self.buttons_on:
             self._call("enable_button_events", self.dev.enable_button_events, True, 10)

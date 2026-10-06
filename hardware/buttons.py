@@ -1,4 +1,4 @@
-"""Button diagnostic: set screen text first, then enable events (order that worked in hw_test)."""
+"""Button diagnostic: set screen text first, then enable events (the order that works on firmware v54)."""
 import time
 from freewili import FreeWili
 from freewili.types import ButtonData, EventType

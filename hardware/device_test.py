@@ -1,7 +1,7 @@
-"""Phase 1 hardware test for TapTrack PD.
+"""Hardware check for the FREE-WILi used by TapTrack PD.
 
-Run:  python hw_test.py            (full test, prompts appear on the device screen)
-      python hw_test.py clip.wav   (also upload and play your own .wav)
+Run:  python hardware/device_test.py            (full test, prompts appear on the device screen)
+      python hardware/device_test.py clip.wav   (also upload and play your own .wav)
 Plug in the FREE-WILi by USB first. Press Ctrl+C to stop early.
 
 What it checks:

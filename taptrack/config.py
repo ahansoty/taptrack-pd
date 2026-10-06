@@ -30,7 +30,7 @@ CHECK_AUTO_ADVANCE = _flag("CHECK_AUTO_ADVANCE")
 # Set to false to never touch the hardware (dashboard + synthetic only).
 USE_DEVICE = _flag("USE_DEVICE", True)
 
-# Measured in HARDWARE_NOTES.md: 5 ms requested interval -> ~79 Hz real.
+# Measured in hardware/NOTES.md: 5 ms requested interval -> ~79 Hz real.
 ACCEL_INTERVAL_MS = int(env("ACCEL_INTERVAL_MS", "5"))
 COUNTS_PER_G = float(env("COUNTS_PER_G", "16384"))
 MIC_RATE_HZ = float(env("MIC_RATE_HZ", "8000"))

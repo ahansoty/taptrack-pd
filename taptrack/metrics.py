@@ -2,7 +2,7 @@
 
 All accelerometer inputs are times in seconds (any clock, may be bursty/uneven) and an
 (N, 3) array in g. Signals are resampled to a uniform grid before filtering because the
-USB event stream arrives in bursts (see HARDWARE_NOTES.md).
+USB event stream arrives in bursts (see hardware/NOTES.md).
 """
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ import numpy as np
 from scipy import signal
 
 TREMOR_FREQ_MIN_RATE_HZ = 40.0
-VOICE_ABS_FLOOR = 250.0  # raw mic units after DC removal  # CLAUDE.md: dominant frequency only if the real rate is >= 40 Hz
+VOICE_ABS_FLOOR = 250.0  # raw mic units after DC removal
 
 
 def measured_rate(t) -> float:

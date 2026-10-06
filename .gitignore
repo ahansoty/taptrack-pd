@@ -1,27 +1,23 @@
+# environments and caches
 .venv/
-__pycache__/
-*.pyc
-.env
-data/*.db
-data/*.db-*
-audio/out/
-.pytest_cache/
-agent/*_data.json
-data/shots/
-data/*.log
-agent/.seed
 agent/.venv/
 photon/node_modules/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# secrets and per-machine state
+.env
+agent/.seed
 *_data.json
-data/start.log
-data/.env*
-data/*.json
-data/video/
-data/raw/
-audio/src/
-data/.session_key
-video/out/
-/demo_video.mp4
-/demo_short.mp4
-video/footage/*.mp4
-/video_irl.MOV
+
+# runtime data written by the app (databases, logs, screenshots, recordings)
+data/
+
+# generated audio (rebuilt by scripts/make_audio.py)
+audio/
+
+# local video files
+*.mp4
+*.MOV
+!docs/media/demo.mp4

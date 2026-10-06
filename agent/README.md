@@ -26,8 +26,8 @@ It describes patterns only. It never gives medication or dose advice.
 ## Agents
 | Agent | Role | Address |
 |---|---|---|
-| taptrack-care | Care-team agent (mailbox, Agentverse, chat protocol) | printed at startup, see SUBMISSION.md |
-| taptrack-clinic | Clinic scheduling agent (agent-to-agent follow-up offers) | printed at startup |
+| taptrack-care | Care-team agent (mailbox, Agentverse, chat protocol) | `agent1q0m06w5n433l7wlefgjw5pmvu0eweuepj3trmgp926wwn7wykjefs3pj0n2` |
+| taptrack-clinic | Clinic scheduling agent (agent-to-agent follow-up offers) | `agent1qtnz8722nfr5vqsjd3qdwwgevuwnu4d3e5lvgcywnavd2j8xnvycyfsp8px` |
 
 Protocols: AgentChatProtocol 0.3.0 (ASI:One), custom `FollowUpRequest` / `FollowUpOffer` models between agents.
 

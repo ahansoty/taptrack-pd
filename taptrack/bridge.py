@@ -28,7 +28,7 @@ STEPS = [
 ]
 
 
-NOT_WORN_HZ = 20.0  # see HARDWARE_NOTES.md: accel events are motion-gated
+NOT_WORN_HZ = 20.0  # see hardware/NOTES.md: accel events are motion-gated
 
 
 SCREEN_DIR = config.ROOT / "screens" / "fwi"

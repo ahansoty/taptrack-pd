@@ -1,4 +1,4 @@
-"""FREE-WILi screen designs (320x240, verified in HARDWARE_NOTES.md).
+"""FREE-WILi screen designs (320x240, verified in hardware/NOTES.md).
 
 Each screen is one SVG frame (importable into Figma as an editable frame of the same
 name). They render to PNG with headless Chromium, so Figma and the wrist match.

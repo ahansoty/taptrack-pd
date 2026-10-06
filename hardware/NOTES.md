@@ -1,6 +1,6 @@
 # Hardware notes (measured 2026-10-03, freewili 0.0.51, firmware v54)
 
-Raw logs: `hw_test_output.txt`, `hw_buttons_output.txt`.
+Measured with `hardware/device_test.py`, `hardware/buttons.py` and `hardware/motion_probe.py`.
 
 ## What works
 | Feature | Result |
@@ -25,7 +25,7 @@ Requested interval vs real rate (device flat, 3 s windows):
 | 10 | ~40 Hz |
 | 5 | **~79 Hz** |
 
-- **The accel stream is motion-gated** (re-measured with `scripts/hw_motionprobe.py`): lying still on a
+- **The accel stream is motion-gated** (re-measured with `hardware/motion_probe.py`): lying still on a
   table the device sends only ~1 event/s at any interval; held in the hand it sends ~84/s, waving ~117/s.
   The 79 Hz above was measured while it was being handled. Worn on a wrist it streams continuously.
   Consequences: (1) we treat a stream < 20 Hz during a test as "not worn" and flag it; (2) passive tremor
